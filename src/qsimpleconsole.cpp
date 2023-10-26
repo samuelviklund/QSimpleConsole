@@ -10,7 +10,6 @@
 QSimpleConsole::QSimpleConsole()
 {
     setUndoRedoEnabled(false); // TODO: Support undo/redo
-    qDebug() << textInteractionFlags();
     setFont(QFont("Source Code Pro"));
     setLineHeader("> ");
     textCursor().insertText(lineHeader);
