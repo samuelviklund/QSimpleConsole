@@ -1,6 +1,7 @@
 # QSimpleConsole
 
 QSimpleConsole is an easy way to integrate a console with your Qt application.
+![QSimpleConsole](https://i.imgur.com/JJGZ9I1.png)
 
 ## Installation
 
