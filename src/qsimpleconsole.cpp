@@ -5,295 +5,300 @@
 #include <QMenu>
 #include <QPalette>
 
-#include <iostream>
-
 QSimpleConsole::QSimpleConsole()
 {
-    setUndoRedoEnabled(false); // TODO: Support undo/redo
-    setFont(QFont("Source Code Pro"));
-    setLineHeader("> ");
-    textCursor().insertText(lineHeader);
+	setUndoRedoEnabled(false); // TODO: Support undo/redo
+	setFont(QFont("Source Code Pro"));
+
+	QTextCursor cursor = textCursor();
+	cursor.insertText(prompt);
+	setTextCursor(cursor);
+
+	promptEndPosition = cursor.position();
 }
 
-void QSimpleConsole::setLineHeader(QString header)
+void QSimpleConsole::setPrompt(const QString &p)
 {
-    lineHeader = header;
-    inputStartPosition = header.length();
+	prompt = p;
+
+	QTextCursor cursor = textCursor();
+	promptEndPosition = cursor.position();
 }
 
-QString QSimpleConsole::getCommand()
+QString QSimpleConsole::getCommand() const
 {
-    QTextCursor textCursor = this->textCursor();
-    QString command;
+	QTextCursor cursor = this->textCursor();
+	QString command;
 
-    textCursor.movePosition(QTextCursor::End);
-    textCursor.setPosition(inputStartPosition, QTextCursor::KeepAnchor);
-    command = textCursor.selectedText();
-    command.replace(QChar::LineSeparator, QChar::LineFeed);
+	cursor.movePosition(QTextCursor::End);
+	cursor.setPosition(promptEndPosition, QTextCursor::KeepAnchor);
+	command = cursor.selectedText();
+	command.replace(QChar::LineSeparator, QChar::LineFeed);
 
-    return command;
+	return command;
 }
 
-void QSimpleConsole::replaceCommand(QString command)
+void QSimpleConsole::setCurrentCommand(const QString &command)
 {
-    QTextCursor textCursor = this->textCursor();
-    textCursor.movePosition(QTextCursor::End);
-    textCursor.setPosition(inputStartPosition, QTextCursor::KeepAnchor);
-    textCursor.insertText(command);
-    textCursor.movePosition(QTextCursor::End);
+	QTextCursor cursor = textCursor();
+	cursor.movePosition(QTextCursor::End);
+	cursor.setPosition(promptEndPosition, QTextCursor::KeepAnchor);
+	cursor.insertText(command);
+	cursor.movePosition(QTextCursor::End);
 
-    setTextCursor(textCursor);
+	setTextCursor(cursor);
 }
 
-void QSimpleConsole::processCut(QKeyEvent *event)
+void QSimpleConsole::handleCut(QKeyEvent *event)
 {
-    event->accept();
+	event->accept();
 
-    QTextCursor textCursor = this->textCursor();
-    if (textCursor.selectionStart() < inputStartPosition)
-        return;
+	QTextCursor cursor = textCursor();
+	if (cursor.selectionStart() < promptEndPosition)
+		return;
 
-    QApplication::clipboard()->setText(textCursor.selectedText());
-    textCursor.removeSelectedText();
+	QApplication::clipboard()->setText(cursor.selectedText());
+	cursor.removeSelectedText();
 
-    setTextCursor(textCursor);
+	setTextCursor(cursor);
 }
 
-void QSimpleConsole::processPaste(QKeyEvent *event)
+void QSimpleConsole::handlePaste(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
+	QTextCursor cursor = textCursor();
 
-    if (textCursor.position() < inputStartPosition) {
-        event->accept();
+	if (cursor.position() < promptEndPosition) {
+		event->accept();
 
-        return;
-    }
+		return;
+	}
 
-    QPlainTextEdit::keyPressEvent(event);
+	QPlainTextEdit::keyPressEvent(event);
 }
 
-void QSimpleConsole::processSelectAll(QKeyEvent *event)
+void QSimpleConsole::handleSelectAll(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
-    textCursor.movePosition(QTextCursor::End);
-    textCursor.setPosition(inputStartPosition, QTextCursor::KeepAnchor);
+	QTextCursor cursor = textCursor();
+	cursor.movePosition(QTextCursor::End);
+	cursor.setPosition(promptEndPosition, QTextCursor::KeepAnchor);
 
-    setTextCursor(textCursor);
+	setTextCursor(cursor);
 
-    event->accept();
+	event->accept();
 }
 
-void QSimpleConsole::processUpKey(QKeyEvent *event)
+void QSimpleConsole::handleUpKey(QKeyEvent *event)
 {
-    event->accept();
+	event->accept();
 
-    if (history.size() == 0 || historyIndex >= (int32_t) history.size() - 1)
-        return;
+	if (history.empty() || historyIndex >= (int32_t) history.size() - 1)
+		return;
 
-    historyIndex++;
+	historyIndex++;
 
-    replaceCommand(history.at(historyIndex));
+	setCurrentCommand(history.at(historyIndex));
 
 }
 
-void QSimpleConsole::processDownKey(QKeyEvent *event)
+void QSimpleConsole::handleDownKey(QKeyEvent *event)
 {
-    event->accept();
+	event->accept();
 
-    if (history.size() == 0)
-        return;
+	if (history.empty())
+		return;
 
-    if (historyIndex > 0) {
-        historyIndex--;
-        qDebug() << history.at(historyIndex) << ", " << historyIndex;
-        replaceCommand(history.at(historyIndex));
-        return;
-    }
+	if (historyIndex > 0) {
+		historyIndex--;
+		setCurrentCommand(history.at(historyIndex));
+		return;
+	}
 
-    historyIndex = -1;
-    replaceCommand("");
+	historyIndex = -1;
+	setCurrentCommand("");
 }
 
-void QSimpleConsole::processLeftRightKey(QKeyEvent *event)
+void QSimpleConsole::handleLeftRightKey(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
-    int8_t direction = event->key() == Qt::Key_Left ? -1 : 1;
+	QTextCursor cursor = textCursor();
+	int8_t offset = event->key() == Qt::Key_Left ? -1 : 1;
 
-    if (textCursor.position() + direction < inputStartPosition) {
-        textCursor.setPosition(inputStartPosition);
-        setTextCursor(textCursor);
-        event->accept();
+	if (cursor.position() + offset < promptEndPosition) {
+		cursor.setPosition(promptEndPosition);
+		setTextCursor(cursor);
+		event->accept();
 
-        return;
-    }
+		return;
+	}
 
-    QPlainTextEdit::keyPressEvent(event);
+	QPlainTextEdit::keyPressEvent(event);
 }
 
-void QSimpleConsole::processReturnKey(QKeyEvent *event)
+void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
-    textCursor.movePosition(QTextCursor::End);
-    setTextCursor(textCursor);
+	QTextCursor cursor = textCursor();
+	cursor.movePosition(QTextCursor::End);
+	setTextCursor(cursor);
 
-    QString command = getCommand();
-    if (!command.isEmpty()) {
-        pushHistoryCommand(command);
-        emit consoleCommand(command);
-    } else {
-        textCursor.insertText("\n");
-        textCursor.insertText(lineHeader);
-    }
-    inputStartPosition = textCursor.position();
-    historyIndex = -1;
+	QString command = getCommand();
+	if (!command.isEmpty()) {
+		pushHistoryCommand(command);
+		emit commandEntered(command);
+	} else {
+		cursor.insertText("\n");
+		cursor.insertText(prompt);
+	}
+	promptEndPosition = cursor.position();
+	historyIndex = -1;
 
-    event->accept();
+	event->accept();
 }
 
-void QSimpleConsole::processDeleteKey(QKeyEvent *event)
+void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
+	QTextCursor cursor = textCursor();
 
-    if ((textCursor.selectedText().length() == 0 && textCursor.position() >= inputStartPosition) ||
-        (textCursor.selectedText().length() > 0 && textCursor.selectionStart() > (inputStartPosition - 1))) {
-        QPlainTextEdit::keyPressEvent(event);
-        return;
-    }
+	if ((cursor.selectedText().length() == 0 && cursor.position() >= promptEndPosition) ||
+	    (cursor.selectedText().length() > 0 && cursor.selectionStart() > (promptEndPosition - 1))) {
+		QPlainTextEdit::keyPressEvent(event);
+		return;
+	}
 
-    event->accept();
+	event->accept();
 }
 
-void QSimpleConsole::processBackspaceKey(QKeyEvent *event)
+void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
+	QTextCursor cursor = textCursor();
 
-    if ((textCursor.selectedText().length() == 0 && textCursor.position() > inputStartPosition) ||
-        (textCursor.selectedText().length() > 0 && textCursor.selectionStart() > (inputStartPosition - 1))) {
-        QPlainTextEdit::keyPressEvent(event);
-        return;
-    }
+	if ((cursor.selectedText().length() == 0 && cursor.position() > promptEndPosition) ||
+	    (cursor.selectedText().length() > 0 && cursor.selectionStart() > (promptEndPosition - 1))) {
+		QPlainTextEdit::keyPressEvent(event);
+		return;
+	}
 
-    event->accept();
+	event->accept();
 }
 
-void QSimpleConsole::processHomeKey(QKeyEvent *event)
+void QSimpleConsole::handleHomeKey(QKeyEvent *event)
 {
-    QTextCursor textCursor = this->textCursor();
-    textCursor.setPosition(inputStartPosition);
-    setTextCursor(textCursor);
+	QTextCursor cursor = textCursor();
+	cursor.setPosition(promptEndPosition);
+	setTextCursor(cursor);
 
-    event->accept();
+	event->accept();
 }
 
-bool QSimpleConsole::isCuttable()
+bool QSimpleConsole::canCut() const
 {
-    QTextCursor textCursor = this->textCursor();
+	QTextCursor cursor = textCursor();
 
-    if (!textCursor.hasSelection())
-        return false;
+	if (!cursor.hasSelection())
+		return false;
 
-    if (textCursor.selectionStart() < inputStartPosition)
-        return false;
+	if (cursor.selectionStart() < promptEndPosition)
+		return false;
 
-    return true;
+	return true;
 }
 
-bool QSimpleConsole::isPasteable()
+bool QSimpleConsole::canPaste() const
 {
-    return textCursor().position() >= inputStartPosition;
+	return textCursor().position() >= promptEndPosition;
 }
 
-void QSimpleConsole::writeOutput(QString result)
+void QSimpleConsole::appendOutput(const QString &result)
 {
-    QTextCursor textCursor = this->textCursor();
-    textCursor.movePosition(QTextCursor::End);
-    setTextCursor(textCursor);
+	QTextCursor cursor = textCursor();
+	cursor.movePosition(QTextCursor::End);
+	setTextCursor(cursor);
 
-    textCursor.insertText("\n");
-    textCursor.insertText(result);
-    textCursor.insertText("\n");
-    textCursor.insertText(lineHeader);
-    inputStartPosition = textCursor.position();
+	cursor.insertText("\n");
+	cursor.insertText(result);
+	cursor.insertText("\n");
+	cursor.insertText(prompt);
+	promptEndPosition = cursor.position();
 }
 
 void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 {
-    int key = event->key();
-    Qt::KeyboardModifiers modifiers = event->modifiers();
+	int key = event->key();
+	Qt::KeyboardModifiers modifiers = event->modifiers();
 
-    if (modifiers == Qt::ControlModifier && key == Qt::Key_C) {
-        // Copy
-        //return;
-    }
+	/*
+	if (modifiers == Qt::ControlModifier && key == Qt::Key_C) {
+		// Copy
+		//return;
+	}
+	*/
 
-    if (modifiers == Qt::ControlModifier && key == Qt::Key_V) {
-        processPaste(event);
-        return;
-    }
+	if (modifiers == Qt::ControlModifier && key == Qt::Key_V) {
+		handlePaste(event);
+		return;
+	}
 
-    if (modifiers == Qt::ControlModifier && key == Qt::Key_X) {
-        processCut(event);
-        return;
-    }
+	if (modifiers == Qt::ControlModifier && key == Qt::Key_X) {
+		handleCut(event);
+		return;
+	}
 
-    if (modifiers == Qt::ControlModifier && key == Qt::Key_A) {
-        processSelectAll(event);
-        return;
-    }
+	if (modifiers == Qt::ControlModifier && key == Qt::Key_A) {
+		handleSelectAll(event);
+		return;
+	}
 
-    if (modifiers == Qt::ShiftModifier) {
-        QPlainTextEdit::keyPressEvent(event);
-        return;
-    }
+	if (modifiers == Qt::ShiftModifier) {
+		QPlainTextEdit::keyPressEvent(event);
+		return;
+	}
 
-    switch (key) {
-    case Qt::Key_Up:
-        processUpKey(event);
-        break;
-    case Qt::Key_Down:
-        processDownKey(event);
-        break;
-    case Qt::Key_Left:
-    case Qt::Key_Right:
-        processLeftRightKey(event);
-        break;
-    case Qt::Key_Enter:
-    case Qt::Key_Return:
-        processReturnKey(event);
-        break;
-    case Qt::Key_Delete:
-        processDeleteKey(event);
-        break;
-    case Qt::Key_Backspace:
-        processBackspaceKey(event);
-        break;
-    case Qt::Key_Home:
-        processHomeKey(event);
-        break;
-    default:
-        QPlainTextEdit::keyPressEvent(event);
-    }
+	switch (key) {
+	case Qt::Key_Up:
+		handleUpKey(event);
+		break;
+	case Qt::Key_Down:
+		handleDownKey(event);
+		break;
+	case Qt::Key_Left:
+	case Qt::Key_Right:
+		handleLeftRightKey(event);
+		break;
+	case Qt::Key_Enter:
+	case Qt::Key_Return:
+		handleReturnKey(event);
+		break;
+	case Qt::Key_Delete:
+		handleDeleteKey(event);
+		break;
+	case Qt::Key_Backspace:
+		handleBackspaceKey(event);
+		break;
+	case Qt::Key_Home:
+		handleHomeKey(event);
+		break;
+	default:
+		QPlainTextEdit::keyPressEvent(event);
+	}
 }
 
 void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 {
-    QMenu *menu = createStandardContextMenu();
-    QAction *action;
+	QMenu *menu = createStandardContextMenu();
+	QAction *action;
 
-    if ((action = menu->findChild<QAction*>("edit-cut")))
-        action->setEnabled(isCuttable());
-    if ((action = menu->findChild<QAction*>("edit-delete")))
-        action->setEnabled(isCuttable());
-    if ((action = menu->findChild<QAction*>("edit-paste")))
-        action->setEnabled(isPasteable());
+	if ((action = menu->findChild<QAction*>("edit-cut")))
+		action->setEnabled(canCut());
+	if ((action = menu->findChild<QAction*>("edit-delete")))
+		action->setEnabled(canCut());
+	if ((action = menu->findChild<QAction*>("edit-paste")))
+		action->setEnabled(canPaste());
 
-    menu->exec(event->globalPos());
-    delete menu;
+	menu->exec(event->globalPos());
+	delete menu;
 }
 
-void QSimpleConsole::pushHistoryCommand(QString command)
+void QSimpleConsole::pushHistoryCommand(const QString &command)
 {
-    history.push_front(command);
-    if (history.size() > historySizeMax)
-        history.pop_back();
+	history.push_front(command);
+	if (history.size() > historySizeMax)
+		history.pop_back();
 }
