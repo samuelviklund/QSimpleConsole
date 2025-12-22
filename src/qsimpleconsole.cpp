@@ -215,7 +215,6 @@ void QSimpleConsole::appendOutput(const QString &result)
 	cursor.movePosition(QTextCursor::End);
 
 	QString command = getCommand();
-	qDebug() << command;
 
 	if (!isUserInput) {
 		cursor.select(QTextCursor::LineUnderCursor);
