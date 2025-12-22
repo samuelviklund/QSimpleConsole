@@ -15,8 +15,6 @@ QSimpleConsole::QSimpleConsole()
 	setTextCursor(cursor);
 
 	promptEndPosition = cursor.position();
-
-	appendOutput("test");
 }
 
 void QSimpleConsole::setPrompt(const QString &p)
