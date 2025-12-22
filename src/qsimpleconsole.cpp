@@ -25,15 +25,17 @@ void QSimpleConsole::setPrompt(const QString &p)
 	promptEndPosition = cursor.position();
 }
 
-QString QSimpleConsole::getCommand() const
+QString QSimpleConsole::getCommand()
 {
-	QTextCursor cursor = this->textCursor();
+	QTextCursor cursor = textCursor();
 	QString command;
 
 	cursor.movePosition(QTextCursor::End);
 	cursor.setPosition(promptEndPosition, QTextCursor::KeepAnchor);
 	command = cursor.selectedText();
 	command.replace(QChar::LineSeparator, QChar::LineFeed);
+
+	setTextCursor(cursor);
 
 	return command;
 }
@@ -212,12 +214,14 @@ void QSimpleConsole::appendOutput(const QString &result)
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
 
+	QString command = getCommand();
+	qDebug() << command;
+
 	if (!isUserInput) {
 		cursor.select(QTextCursor::LineUnderCursor);
 		cursor.removeSelectedText();
 	} else {
 		cursor.insertText("\n");
-		isUserInput = false;
 	}
 
 	if (useTimestamp) {
@@ -227,7 +231,16 @@ void QSimpleConsole::appendOutput(const QString &result)
 	cursor.insertText(result);
 	cursor.insertText("\n");
 	cursor.insertText(prompt);
+
 	promptEndPosition = cursor.position();
+
+	if (!isUserInput && !command.isEmpty()) {
+		cursor.insertText(command);
+		//setCurrentCommand(command);
+	}
+
+	if (isUserInput)
+		isUserInput = false;
 
 	setTextCursor(cursor);
 }
@@ -256,11 +269,6 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 
 	if (modifiers == Qt::ControlModifier && key == Qt::Key_A) {
 		handleSelectAll(event);
-		return;
-	}
-
-	if (modifiers == Qt::ShiftModifier && key == Qt::Key_Q) {
-		appendOutput("sup");
 		return;
 	}
 

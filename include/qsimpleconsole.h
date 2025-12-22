@@ -14,7 +14,7 @@ public:
 	QSimpleConsole();
 
 	void setPrompt(const QString &p);
-	QString getCommand() const;
+	QString getCommand();
 	void setCurrentCommand(const QString &command);
 	void setTimestamp(bool state) { useTimestamp = state; }
 
