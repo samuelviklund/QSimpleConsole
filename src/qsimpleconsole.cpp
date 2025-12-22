@@ -15,6 +15,8 @@ QSimpleConsole::QSimpleConsole()
 	setTextCursor(cursor);
 
 	promptEndPosition = cursor.position();
+
+	appendOutput("test");
 }
 
 void QSimpleConsole::setPrompt(const QString &p)
@@ -142,6 +144,7 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 	QString command = getCommand();
 	if (!command.isEmpty()) {
 		pushHistoryCommand(command);
+		isUserInput = true;
 		emit commandEntered(command);
 	} else {
 		cursor.insertText("\n");
@@ -210,13 +213,25 @@ void QSimpleConsole::appendOutput(const QString &result)
 {
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
-	setTextCursor(cursor);
 
-	cursor.insertText("\n");
+	if (!isUserInput) {
+		cursor.select(QTextCursor::LineUnderCursor);
+		cursor.removeSelectedText();
+	} else {
+		cursor.insertText("\n");
+		isUserInput = false;
+	}
+
+	if (useTimestamp) {
+		cursor.insertText(QTime::currentTime().toString("hh:mm:ss") + ": ");
+	}
+
 	cursor.insertText(result);
 	cursor.insertText("\n");
 	cursor.insertText(prompt);
 	promptEndPosition = cursor.position();
+
+	setTextCursor(cursor);
 }
 
 void QSimpleConsole::keyPressEvent(QKeyEvent *event)
@@ -243,6 +258,11 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 
 	if (modifiers == Qt::ControlModifier && key == Qt::Key_A) {
 		handleSelectAll(event);
+		return;
+	}
+
+	if (modifiers == Qt::ShiftModifier && key == Qt::Key_Q) {
+		appendOutput("sup");
 		return;
 	}
 

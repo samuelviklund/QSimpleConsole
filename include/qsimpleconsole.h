@@ -2,6 +2,7 @@
 #define QSIMPLECONSOLE_H
 
 #include <QPlainTextEdit>
+#include <QTime>
 
 #include <deque>
 
@@ -15,6 +16,7 @@ public:
 	void setPrompt(const QString &p);
 	QString getCommand() const;
 	void setCurrentCommand(const QString &command);
+	void setTimestamp(bool state) { useTimestamp = state; }
 
 	bool canCut() const;
 	bool canPaste() const;
@@ -48,6 +50,8 @@ private:
 	std::deque<QString> history;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
+	bool isUserInput = false;
+	bool useTimestamp = false;
 };
 
 #endif // QSIMPLECONSOLE_H
