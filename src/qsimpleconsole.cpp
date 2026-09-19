@@ -7,7 +7,9 @@
 #include <QPalette>
 #include <QRegularExpression>
 #include <QTextBlock>
+#include <QTime>
 
+#include <cstddef>
 #include <memory>
 
 namespace {
@@ -49,7 +51,7 @@ int32_t QSimpleConsole::inputStart() const
 	for (QTextBlock block = document()->lastBlock(); block.isValid();
 	     block = block.previous()) {
 		if (block.text().startsWith(promptText))
-			return block.position() + promptText.length();
+			return static_cast<int32_t>(block.position() + promptText.length());
 	}
 
 	return 0;
@@ -161,7 +163,7 @@ void QSimpleConsole::handleUpKey(QKeyEvent *event)
 
 	historyIndex++;
 
-	setCurrentCommand(history.at(historyIndex));
+	setCurrentCommand(history.at(static_cast<std::size_t>(historyIndex)));
 }
 
 void QSimpleConsole::handleDownKey(QKeyEvent *event)
@@ -173,7 +175,7 @@ void QSimpleConsole::handleDownKey(QKeyEvent *event)
 
 	if (historyIndex > 0) {
 		historyIndex--;
-		setCurrentCommand(history.at(historyIndex));
+		setCurrentCommand(history.at(static_cast<std::size_t>(historyIndex)));
 		return;
 	}
 
@@ -240,9 +242,8 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
-	const int32_t start = inputStart();
 
-	if (cursor.hasSelection() ? cursor.selectionStart() >= start : cursor.position() >= start) {
+	if (canEditAt(cursor)) {
 		QPlainTextEdit::keyPressEvent(event);
 		return;
 	}
@@ -256,7 +257,7 @@ void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 	const int32_t start = inputStart();
 
 	if (cursor.hasSelection()) {
-		if (cursor.selectionStart() >= start)
+		if (canEditAt(cursor))
 			QPlainTextEdit::keyPressEvent(event);
 		else
 			event->accept();
@@ -301,15 +302,9 @@ void QSimpleConsole::handleHomeKey(QKeyEvent *event)
 
 bool QSimpleConsole::canCut() const
 {
-	QTextCursor cursor = textCursor();
+	const QTextCursor cursor = textCursor();
 
-	if (!cursor.hasSelection())
-		return false;
-
-	if (cursor.selectionStart() < inputStart())
-		return false;
-
-	return true;
+	return cursor.hasSelection() && canEditAt(cursor);
 }
 
 bool QSimpleConsole::canPaste() const

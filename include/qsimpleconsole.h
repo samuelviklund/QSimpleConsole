@@ -2,7 +2,6 @@
 #define QSIMPLECONSOLE_H
 
 #include <QPlainTextEdit>
-#include <QTime>
 
 #include <cstdint>
 #include <deque>
