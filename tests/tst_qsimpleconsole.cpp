@@ -40,6 +40,9 @@ private slots:
 	void twoOutputsForOneCommandRenderCleanly();
 	void timestampPrefixesOutput();
 	void maximumBlockCountDoesNotBreakBoundary();
+	void scrollbackIsUnlimitedByDefault();
+	void scrollbackLinesCapsHistory();
+	void scrollbackCapPreservesPendingInput();
 
 	// -- characterization: history ---------------------------------------
 	void upDownNavigatesHistory();
@@ -276,6 +279,49 @@ void tst_QSimpleConsole::maximumBlockCountDoesNotBreakBoundary()
 // ---------------------------------------------------------------------------
 // characterization: history
 // ---------------------------------------------------------------------------
+
+void tst_QSimpleConsole::scrollbackIsUnlimitedByDefault()
+{
+	QSimpleConsole console;
+	console.show();
+
+	QCOMPARE(console.scrollbackLines(), 0);
+
+	for (int i = 0; i < 200; ++i)
+		console.appendOutput(QStringLiteral("line %1").arg(i));
+
+	QCOMPARE(console.document()->blockCount(), 201);
+}
+
+void tst_QSimpleConsole::scrollbackLinesCapsHistory()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setScrollbackLines(5);
+
+	QCOMPARE(console.scrollbackLines(), 5);
+
+	for (int i = 0; i < 50; ++i)
+		console.appendOutput(QStringLiteral("line %1").arg(i));
+
+	// five output lines, plus the input line the limit also counts
+	QCOMPARE(console.document()->blockCount(), 6);
+	QVERIFY2(console.toPlainText().startsWith(QStringLiteral("line 45")),
+	         qPrintable("scrollback is: " + console.toPlainText()));
+}
+
+void tst_QSimpleConsole::scrollbackCapPreservesPendingInput()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setScrollbackLines(3);
+	QTest::keyClicks(&console, "typing");
+
+	for (int i = 0; i < 20; ++i)
+		console.appendOutput(QStringLiteral("line %1").arg(i));
+
+	QCOMPARE(console.getCommand(), QStringLiteral("typing"));
+}
 
 void tst_QSimpleConsole::upDownNavigatesHistory()
 {

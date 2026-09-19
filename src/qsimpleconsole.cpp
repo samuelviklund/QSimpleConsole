@@ -99,6 +99,20 @@ QString QSimpleConsole::getCommand()
 	return command;
 }
 
+void QSimpleConsole::setScrollbackLines(int lines)
+{
+	// The block limit counts the input line too, so one more than the number of
+	// scrollback lines the caller asked for. Qt reads 0 as "no limit".
+	setMaximumBlockCount(lines > 0 ? lines + 1 : 0);
+}
+
+int QSimpleConsole::scrollbackLines() const
+{
+	const int blocks = maximumBlockCount();
+
+	return blocks > 0 ? blocks - 1 : 0;
+}
+
 void QSimpleConsole::setCurrentCommand(const QString &command)
 {
 	QTextCursor cursor = textCursor();

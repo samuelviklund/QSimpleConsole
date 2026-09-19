@@ -55,6 +55,7 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | `getCommand()` | The text currently typed after the prompt. |
 | `setCurrentCommand(const QString &)` | Replaces the text after the prompt, as history navigation does. |
 | `setTimestamp(bool)` | Prefixes each output line with `hh:mm:ss: `. Off by default. |
+| `setScrollbackLines(int)`, `scrollbackLines()` | Caps the output lines kept above the input. 0 keeps every line, and is the default. |
 | `canCut()`, `canPaste()` | Whether cut and paste are currently possible. Used for the context menu. |
 
 Output that arrives while a command is half-typed is written above the input,
@@ -82,6 +83,18 @@ signal/slot connection rather than calling it directly.
 **Commands are untrusted input.** `commandEntered` forwards whatever was typed
 or pasted, unchanged. Validate it before handing it to a shell, an interpreter
 or a query engine.
+
+**Scrollback is unlimited by default.** Every line of output is kept for the
+lifetime of the widget, and Qt holds a laid-out representation of each one -
+measured at roughly 4 kB of resident memory per line, so 50,000 lines cost
+about 190 MB. A console fed by a long-running producer should cap it:
+
+```cpp
+console->setScrollbackLines(5000);
+```
+
+Capping the scrollback disables undo/redo, which is how `QPlainTextEdit`'s
+underlying block limit behaves.
 
 ## Tests
 

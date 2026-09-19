@@ -18,6 +18,12 @@ public:
 	void setCurrentCommand(const QString &command);
 	void setTimestamp(bool state) { useTimestamp = state; }
 
+	// Caps the output lines kept above the input line. A value of 0 or less
+	// keeps every line, which is the default. Capping the scrollback also
+	// disables undo/redo, which is how QPlainTextEdit's block limit behaves.
+	void setScrollbackLines(int lines);
+	int scrollbackLines() const;
+
 	bool canCut() const;
 	bool canPaste() const;
 
