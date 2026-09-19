@@ -47,6 +47,8 @@ private slots:
 	void clearLeavesTheConsoleUsable();
 	void clearKeepsHistory();
 	void clearHistoryDropsRecordedCommands();
+	void currentCommandLeavesTheCursorAlone();
+	void propertiesReachTheMetaObject();
 
 	// -- characterization: history ---------------------------------------
 	void upDownNavigatesHistory();
@@ -110,7 +112,7 @@ void tst_QSimpleConsole::promptIsDrawnOnConstruction()
 	console.show();
 
 	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
-	QCOMPARE(console.getCommand(), QString());
+	QCOMPARE(console.currentCommand(), QString());
 }
 
 void tst_QSimpleConsole::typedTextIsEmittedAsCommand()
@@ -234,7 +236,7 @@ void tst_QSimpleConsole::asyncOutputPreservesPendingInput()
 	console.appendOutput("ASYNC");
 
 	QCOMPARE(console.toPlainText(), QStringLiteral("ASYNC\n> typing"));
-	QCOMPARE(console.getCommand(), QStringLiteral("typing"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("typing"));
 }
 
 void tst_QSimpleConsole::twoOutputsForOneCommandRenderCleanly()
@@ -255,7 +257,7 @@ void tst_QSimpleConsole::timestampPrefixesOutput()
 {
 	QSimpleConsole console;
 	console.show();
-	console.setTimestamp(true);
+	console.setTimestampEnabled(true);
 
 	console.appendOutput("hello");
 
@@ -277,7 +279,7 @@ void tst_QSimpleConsole::maximumBlockCountDoesNotBreakBoundary()
 		enter(&console, command);
 	QTest::keyClicks(&console, "next");
 
-	QCOMPARE(console.getCommand(), QStringLiteral("next"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("next"));
 }
 
 // ---------------------------------------------------------------------------
@@ -324,7 +326,7 @@ void tst_QSimpleConsole::scrollbackCapPreservesPendingInput()
 	for (int i = 0; i < 20; ++i)
 		console.appendOutput(QStringLiteral("line %1").arg(i));
 
-	QCOMPARE(console.getCommand(), QStringLiteral("typing"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("typing"));
 }
 
 void tst_QSimpleConsole::clearRedrawsThePrompt()
@@ -338,7 +340,7 @@ void tst_QSimpleConsole::clearRedrawsThePrompt()
 	console.clear();
 
 	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
-	QCOMPARE(console.getCommand(), QString());
+	QCOMPARE(console.currentCommand(), QString());
 }
 
 void tst_QSimpleConsole::clearLeavesTheConsoleUsable()
@@ -367,7 +369,7 @@ void tst_QSimpleConsole::clearKeepsHistory()
 	console.clear();
 	QTest::keyClick(&console, Qt::Key_Up);
 
-	QCOMPARE(console.getCommand(), QStringLiteral("remembered"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("remembered"));
 }
 
 void tst_QSimpleConsole::clearHistoryDropsRecordedCommands()
@@ -382,7 +384,41 @@ void tst_QSimpleConsole::clearHistoryDropsRecordedCommands()
 	QTest::keyClick(&console, Qt::Key_Up);
 
 	// nothing to recall, so Up leaves the line alone
-	QCOMPARE(console.getCommand(), QStringLiteral("draft"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("draft"));
+}
+
+void tst_QSimpleConsole::currentCommandLeavesTheCursorAlone()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "abc");
+
+	// park the cursor mid-command, where reading must not disturb it
+	QTextCursor cursor = console.textCursor();
+	cursor.setPosition(console.document()->lastBlock().position() + 3);
+	console.setTextCursor(cursor);
+	const int position = console.textCursor().position();
+
+	QCOMPARE(console.currentCommand(), QStringLiteral("abc"));
+
+	QCOMPARE(console.textCursor().position(), position);
+	QVERIFY(!console.textCursor().hasSelection());
+}
+
+void tst_QSimpleConsole::propertiesReachTheMetaObject()
+{
+	QSimpleConsole console;
+	console.show();
+
+	QVERIFY(console.setProperty("prompt", QStringLiteral("$ ")));
+	QCOMPARE(console.property("prompt").toString(), QStringLiteral("$ "));
+	QCOMPARE(console.toPlainText(), QStringLiteral("$ "));
+
+	QVERIFY(console.setProperty("timestampEnabled", true));
+	QVERIFY(console.property("timestampEnabled").toBool());
+
+	QVERIFY(console.setProperty("scrollbackLines", 100));
+	QCOMPARE(console.property("scrollbackLines").toInt(), 100);
 }
 
 void tst_QSimpleConsole::upDownNavigatesHistory()
@@ -394,11 +430,11 @@ void tst_QSimpleConsole::upDownNavigatesHistory()
 	enter(&console, "two");
 
 	QTest::keyClick(&console, Qt::Key_Up);
-	QCOMPARE(console.getCommand(), QStringLiteral("two"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("two"));
 	QTest::keyClick(&console, Qt::Key_Up);
-	QCOMPARE(console.getCommand(), QStringLiteral("one"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("one"));
 	QTest::keyClick(&console, Qt::Key_Down);
-	QCOMPARE(console.getCommand(), QStringLiteral("two"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("two"));
 }
 
 void tst_QSimpleConsole::historyIsCappedAtMaximum()
@@ -413,7 +449,7 @@ void tst_QSimpleConsole::historyIsCappedAtMaximum()
 		QTest::keyClick(&console, Qt::Key_Up);
 
 	// 32 entries retained: c39 back to c8.
-	QCOMPARE(console.getCommand(), QStringLiteral("c8"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("c8"));
 }
 
 // ---------------------------------------------------------------------------
@@ -489,7 +525,7 @@ void tst_QSimpleConsole::setPromptPreservesPendingCommand()
 
 	console.setPrompt("$ ");
 
-	QCOMPARE(console.getCommand(), QStringLiteral("abc"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("abc"));
 }
 
 void tst_QSimpleConsole::handlerMayPrefillNextCommand()
@@ -503,7 +539,7 @@ void tst_QSimpleConsole::handlerMayPrefillNextCommand()
 
 	enter(&console, "go");
 
-	QCOMPARE(console.getCommand(), QStringLiteral("prefill"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("prefill"));
 }
 
 void tst_QSimpleConsole::multiLineCommandUsesNewlines()
@@ -512,7 +548,7 @@ void tst_QSimpleConsole::multiLineCommandUsesNewlines()
 	console.show();
 	QSignalSpy spy(&console, &QSimpleConsole::commandEntered);
 
-	// No input path produces a block break any more, but getCommand still has
+	// No input path produces a block break any more, but currentCommand still has
 	// to translate one if it ever appears.
 	QTextCursor cursor = console.textCursor();
 	cursor.movePosition(QTextCursor::End);
@@ -579,7 +615,7 @@ void tst_QSimpleConsole::shiftInsertRespectsPromptBoundary()
 	QTest::keyClick(&console, Qt::Key_Insert, Qt::ShiftModifier);
 
 	QCOMPARE(console.toPlainText(), QStringLiteral("> hello\nhello\n> PASTED"));
-	QCOMPARE(console.getCommand(), QStringLiteral("PASTED"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("PASTED"));
 }
 
 void tst_QSimpleConsole::asyncOutputPreservesWrappedInput()
@@ -607,7 +643,7 @@ void tst_QSimpleConsole::silentHandlerPreservesPendingInput()
 
 	console.appendOutput("LATE");
 
-	QCOMPARE(console.getCommand(), QStringLiteral("typing"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("typing"));
 }
 
 void tst_QSimpleConsole::ctrlBackspaceCannotDeleteAlphanumericPrompt()
@@ -646,7 +682,7 @@ void tst_QSimpleConsole::pastedNewlinesStayOnOneLine()
 
 	QCOMPARE(console.document()->blockCount(), 1);
 	QCOMPARE(console.toPlainText(), QStringLiteral("> aa bb"));
-	QCOMPARE(console.getCommand(), QStringLiteral("aa bb"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("aa bb"));
 }
 
 void tst_QSimpleConsole::droppedTextLandsInInput()
@@ -666,7 +702,7 @@ void tst_QSimpleConsole::droppedTextLandsInInput()
 	console.insertFromMimeData(&mime);
 
 	QCOMPARE(console.toPlainText(), before + QStringLiteral("DROPPED"));
-	QCOMPARE(console.getCommand(), QStringLiteral("DROPPED"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("DROPPED"));
 }
 
 void tst_QSimpleConsole::historyRestoresDraftLine()
@@ -680,7 +716,7 @@ void tst_QSimpleConsole::historyRestoresDraftLine()
 	QTest::keyClick(&console, Qt::Key_Up);
 	QTest::keyClick(&console, Qt::Key_Down);
 
-	QCOMPARE(console.getCommand(), QStringLiteral("draft"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("draft"));
 }
 
 void tst_QSimpleConsole::historySkipsConsecutiveDuplicates()
@@ -693,10 +729,10 @@ void tst_QSimpleConsole::historySkipsConsecutiveDuplicates()
 	enter(&console, "two");
 
 	QTest::keyClick(&console, Qt::Key_Up);
-	QCOMPARE(console.getCommand(), QStringLiteral("two"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("two"));
 	QTest::keyClick(&console, Qt::Key_Up);
 
-	QCOMPARE(console.getCommand(), QStringLiteral("one"));
+	QCOMPARE(console.currentCommand(), QStringLiteral("one"));
 }
 
 QTEST_MAIN(tst_QSimpleConsole)

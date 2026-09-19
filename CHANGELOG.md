@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-19
+
+### Added
+
+- `currentCommand()` replaces `getCommand()`. It is `const` and free of side
+  effects; the old name moved the visible cursor and selection as a side
+  effect of being read.
+- `setTimestampEnabled()` and `isTimestampEnabled()` replace `setTimestamp()`,
+  which had no reader.
+- `prompt()` reads the prompt back.
+- `prompt`, `timestampEnabled` and `scrollbackLines` are declared as
+  `Q_PROPERTY`, so they are reachable from Designer, QML and `setProperty()`.
+
+### Deprecated
+
+- `getCommand()` and `setTimestamp()`. Both still compile and forward to the
+  new names. They will be removed in 2.0.0.
+
 ## [1.1.0] - 2026-09-19
 
 The prompt boundary was previously cached as an absolute character offset into

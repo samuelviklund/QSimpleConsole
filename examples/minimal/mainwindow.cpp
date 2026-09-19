@@ -4,7 +4,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
 	console = new QSimpleConsole(this);
-	console->setTimestamp(true);
+	console->setTimestampEnabled(true);
 
 	connect(console, &QSimpleConsole::commandEntered, console, &QSimpleConsole::appendOutput);
 

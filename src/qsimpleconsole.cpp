@@ -37,19 +37,19 @@ QSimpleConsole::QSimpleConsole(QWidget *parent)
 	setFont(QFont("Source Code Pro"));
 
 	QTextCursor cursor = textCursor();
-	cursor.insertText(prompt);
+	cursor.insertText(promptText);
 	setTextCursor(cursor);
 }
 
 int QSimpleConsole::inputStart() const
 {
-	// The prompt opens the last block. Multi-line input leaves the blocks after
+	// The promptText opens the last block. Multi-line input leaves the blocks after
 	// the first without one, so fall back to the most recent block that carries
 	// it rather than pointing past the end of the document.
 	for (QTextBlock block = document()->lastBlock(); block.isValid();
 	     block = block.previous()) {
-		if (block.text().startsWith(prompt))
-			return block.position() + prompt.length();
+		if (block.text().startsWith(promptText))
+			return block.position() + promptText.length();
 	}
 
 	return 0;
@@ -70,34 +70,31 @@ void QSimpleConsole::moveCursorToInputEnd()
 	setTextCursor(cursor);
 }
 
-void QSimpleConsole::setPrompt(const QString &p)
+void QSimpleConsole::setPrompt(const QString &prompt)
 {
-	const QString command = getCommand();
+	const QString command = currentCommand();
 
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
 	cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
 	cursor.removeSelectedText();
 
-	prompt = p;
+	promptText = prompt;
 
-	cursor.insertText(prompt + command);
+	cursor.insertText(promptText + command);
 
 	setTextCursor(cursor);
 }
 
-QString QSimpleConsole::getCommand()
+QString QSimpleConsole::currentCommand() const
 {
 	QTextCursor cursor = textCursor();
-	QString command;
-
 	cursor.movePosition(QTextCursor::End);
 	cursor.setPosition(inputStart(), QTextCursor::KeepAnchor);
-	command = cursor.selectedText();
+
+	QString command = cursor.selectedText();
 	command.replace(QChar::ParagraphSeparator, QChar::LineFeed);
 	command.replace(QChar::LineSeparator, QChar::LineFeed);
-
-	setTextCursor(cursor);
 
 	return command;
 }
@@ -160,7 +157,7 @@ void QSimpleConsole::handleUpKey(QKeyEvent *event)
 		return;
 
 	if (historyIndex < 0)
-		historyDraft = getCommand();
+		historyDraft = currentCommand();
 
 	historyIndex++;
 
@@ -209,14 +206,14 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 	cursor.movePosition(QTextCursor::End);
 	setTextCursor(cursor);
 
-	const QString command = getCommand();
+	const QString command = currentCommand();
 	historyIndex = -1;
 	historyDraft.clear();
 
 	if (command.isEmpty()) {
 		cursor.movePosition(QTextCursor::End);
 		cursor.insertText("\n");
-		cursor.insertText(prompt);
+		cursor.insertText(promptText);
 		setTextCursor(cursor);
 
 		return;
@@ -231,11 +228,11 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 	handlingSubmittedCommand = false;
 
 	// A handler that wrote no output has left the command line open. Close it,
-	// so the last block is always a prompt followed by pending input.
+	// so the last block is always a promptText followed by pending input.
 	if (document()->revision() == revision) {
 		cursor.movePosition(QTextCursor::End);
 		cursor.insertText("\n");
-		cursor.insertText(prompt);
+		cursor.insertText(promptText);
 		setTextCursor(cursor);
 	}
 }
@@ -273,7 +270,7 @@ void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 		return;
 	}
 
-	// A word-wise delete can reach back past the prompt, so make the deletion
+	// A word-wise delete can reach back past the promptText, so make the deletion
 	// here rather than delegating it, and stop it at the boundary.
 	if (event->matches(QKeySequence::DeleteStartOfWord)) {
 		event->accept();
@@ -325,7 +322,7 @@ void QSimpleConsole::appendOutput(const QString &output)
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
 
-	QString command = getCommand();
+	QString command = currentCommand();
 
 	if (!handlingSubmittedCommand) {
 		cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
@@ -334,13 +331,13 @@ void QSimpleConsole::appendOutput(const QString &output)
 		cursor.insertText("\n");
 	}
 
-	if (useTimestamp) {
+	if (timestampEnabled) {
 		cursor.insertText(QTime::currentTime().toString("hh:mm:ss") + ": ");
 	}
 
 	cursor.insertText(output);
 	cursor.insertText("\n");
-	cursor.insertText(prompt);
+	cursor.insertText(promptText);
 
 	if (!handlingSubmittedCommand && !command.isEmpty()) {
 		cursor.insertText(command);
@@ -356,7 +353,7 @@ void QSimpleConsole::clear()
 	QPlainTextEdit::clear();
 
 	QTextCursor cursor = textCursor();
-	cursor.insertText(prompt);
+	cursor.insertText(promptText);
 
 	setTextCursor(cursor);
 }
@@ -408,7 +405,7 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 		break;
 	}
 
-	// Anything that would insert text has to land after the prompt. Typing
+	// Anything that would insert text has to land after the promptText. Typing
 	// outside the editable region moves to the input instead of editing the
 	// scrollback, which is what a terminal does.
 	if (insertsText(event) && !canEditAt(textCursor()))
@@ -447,8 +444,8 @@ void QSimpleConsole::insertFromMimeData(const QMimeData *source)
 	while (text.endsWith('\n') || text.endsWith('\r'))
 		text.chop(1);
 
-	// The prompt opens a single block, so a pasted line break would leave a
-	// line with no prompt on it. Fold the breaks into spaces instead, which
+	// The promptText opens a single block, so a pasted line break would leave a
+	// line with no promptText on it. Fold the breaks into spaces instead, which
 	// keeps every character of the paste visible and editable.
 	text.replace(QRegularExpression(QStringLiteral("[\\r\\n\\x{2028}\\x{2029}]+")),
 	             QStringLiteral(" "));

@@ -67,14 +67,17 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | --- | --- |
 | `commandEntered(const QString &)` *(signal)* | Emitted when Return is pressed on a non-empty input line. |
 | `appendOutput(const QString &)` *(slot)* | Writes a line of output and reopens the prompt below it. |
-| `setPrompt(const QString &)` | Replaces the prompt. Defaults to `"> "`. |
-| `getCommand()` | The text currently typed after the prompt. |
+| `prompt()`, `setPrompt(const QString &)` | The prompt. Defaults to `"> "`. |
+| `currentCommand()` | The text currently typed after the prompt. Reading it changes nothing. |
 | `setCurrentCommand(const QString &)` | Replaces the text after the prompt, as history navigation does. |
-| `setTimestamp(bool)` | Prefixes each output line with `hh:mm:ss: `. Off by default. |
+| `setTimestampEnabled(bool)`, `isTimestampEnabled()` | Prefixes each output line with `hh:mm:ss: `. Off by default. |
 | `clear()` *(slot)* | Empties the console and draws a fresh prompt. Keeps the history. |
 | `clearHistory()` *(slot)* | Drops the recorded commands, so `Up` has nothing to recall. |
 | `setScrollbackLines(int)`, `scrollbackLines()` | Caps the output lines kept above the input. 0 keeps every line, and is the default. |
 | `canCut()`, `canPaste()` | Whether cut and paste are currently possible. Used for the context menu. |
+
+`prompt`, `timestampEnabled` and `scrollbackLines` are also declared as
+`Q_PROPERTY`, so they are reachable from Designer, QML and `setProperty()`.
 
 Output that arrives while a command is half-typed is written above the input,
 and the pending text is carried down to the new prompt.

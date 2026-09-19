@@ -10,13 +10,22 @@ class QSimpleConsole : public QPlainTextEdit
 {
 	Q_OBJECT
 
+	Q_PROPERTY(QString prompt READ prompt WRITE setPrompt)
+	Q_PROPERTY(bool timestampEnabled READ isTimestampEnabled WRITE setTimestampEnabled)
+	Q_PROPERTY(int scrollbackLines READ scrollbackLines WRITE setScrollbackLines)
+
 public:
 	explicit QSimpleConsole(QWidget *parent = nullptr);
 
-	void setPrompt(const QString &p);
-	QString getCommand();
+	QString prompt() const { return promptText; }
+	void setPrompt(const QString &prompt);
+
+	// The text typed after the prompt. Reading it leaves the console untouched.
+	QString currentCommand() const;
 	void setCurrentCommand(const QString &command);
-	void setTimestamp(bool state) { useTimestamp = state; }
+
+	bool isTimestampEnabled() const { return timestampEnabled; }
+	void setTimestampEnabled(bool enabled) { timestampEnabled = enabled; }
 
 	// Caps the output lines kept above the input line. A value of 0 or less
 	// keeps every line, which is the default. Capping the scrollback also
@@ -26,6 +35,16 @@ public:
 
 	bool canCut() const;
 	bool canPaste() const;
+
+	// Deprecated in 1.2.0, to be removed in 2.0.0.
+	[[deprecated("use currentCommand()")]] QString getCommand() const
+	{
+		return currentCommand();
+	}
+	[[deprecated("use setTimestampEnabled()")]] void setTimestamp(bool state)
+	{
+		setTimestampEnabled(state);
+	}
 
 public slots:
 	void appendOutput(const QString &output);
@@ -64,13 +83,13 @@ private:
 
 	void addToHistory(const QString &command);
 
-	QString prompt = "> ";
+	QString promptText = "> ";
 	std::deque<QString> history;
 	QString historyDraft;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
 	bool handlingSubmittedCommand = false;
-	bool useTimestamp = false;
+	bool timestampEnabled = false;
 };
 
 #endif // QSIMPLECONSOLE_H
