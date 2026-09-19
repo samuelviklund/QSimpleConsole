@@ -15,16 +15,32 @@ command as a signal.
 
 ## Installation
 
-Add the repository to your build and link the `qsimpleconsole` target:
+Either vendor the repository into your build:
 
 ```cmake
 add_subdirectory(third_party/QSimpleConsole)
 
-target_link_libraries(myapp PRIVATE qsimpleconsole)
+target_link_libraries(myapp PRIVATE QSimpleConsole::qsimpleconsole)
 ```
 
-The target carries its own include directory, so `#include "qsimpleconsole.h"`
-works from anywhere in your project.
+Or install it once and find it:
+
+```sh
+cmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build build
+cmake --install build
+```
+
+```cmake
+find_package(QSimpleConsole 1.1 REQUIRED)
+
+target_link_libraries(myapp PRIVATE QSimpleConsole::qsimpleconsole)
+```
+
+The target name is the same either way, and it carries its own include
+directory, so `#include "qsimpleconsole.h"` works from anywhere in your
+project. You do not need to `find_package(Qt...)` yourself - the package
+config pulls in Qt Widgets, which the library exposes publicly.
 
 ## Usage
 

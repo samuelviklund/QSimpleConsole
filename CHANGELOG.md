@@ -22,6 +22,10 @@ the root cause behind most of the fixes below.
 - `clear()` empties the console and draws a fresh prompt, and `clearHistory()`
   drops the recorded commands. Note that `clear()` hides `QPlainTextEdit`'s
   non-virtual slot of the same name rather than overriding it.
+- Install and export rules, so the library can be consumed with
+  `find_package(QSimpleConsole)` instead of being vendored. Both that and
+  `add_subdirectory()` provide the same `QSimpleConsole::qsimpleconsole`
+  target.
 - Qt Test suite covering the prompt boundary, output rendering and history.
   Build it with `-DQSIMPLECONSOLE_BUILD_TESTS=ON` and run it through CTest; it
   needs no display server.
