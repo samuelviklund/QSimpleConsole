@@ -34,7 +34,7 @@ back with `appendOutput`:
 ```cpp
 #include "qsimpleconsole.h"
 
-QSimpleConsole *console = new QSimpleConsole();
+QSimpleConsole *console = new QSimpleConsole(this);
 
 connect(console, &QSimpleConsole::commandEntered, this, [console](const QString &command) {
     console->appendOutput("Command entered: " + command);
@@ -43,9 +43,7 @@ connect(console, &QSimpleConsole::commandEntered, this, [console](const QString 
 setCentralWidget(console);
 ```
 
-The constructor takes no parent, so put the console in a layout or make it a
-central widget to give it one. A complete program is in
-[`examples/minimal`](examples/minimal).
+A complete program is in [`examples/minimal`](examples/minimal).
 
 ## API
 

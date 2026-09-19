@@ -28,7 +28,8 @@ bool insertsText(const QKeyEvent *event)
 
 } // namespace
 
-QSimpleConsole::QSimpleConsole()
+QSimpleConsole::QSimpleConsole(QWidget *parent)
+    : QPlainTextEdit(parent)
 {
 	setUndoRedoEnabled(false); // TODO: Support undo/redo
 	setFont(QFont("Source Code Pro"));

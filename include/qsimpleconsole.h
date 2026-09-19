@@ -11,7 +11,7 @@ class QSimpleConsole : public QPlainTextEdit
 	Q_OBJECT
 
 public:
-	QSimpleConsole();
+	explicit QSimpleConsole(QWidget *parent = nullptr);
 
 	void setPrompt(const QString &p);
 	QString getCommand();

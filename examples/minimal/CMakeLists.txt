@@ -18,12 +18,16 @@ set(PROJECT_SOURCES
         mainwindow.h
 )
 
+# Build the library alongside the example. The guard lets this file work both
+# standalone and when the example is added from the top-level project.
+if(NOT TARGET qsimpleconsole)
+    add_subdirectory(../.. qsimpleconsole_build)
+endif()
+
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(minimal
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        ../../src/qsimpleconsole.cpp
-        ../../include/qsimpleconsole.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET minimal APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -43,8 +47,7 @@ else()
     endif()
 endif()
 
-target_include_directories(minimal PRIVATE ../../include)
-target_link_libraries(minimal PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(minimal PRIVATE qsimpleconsole Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
