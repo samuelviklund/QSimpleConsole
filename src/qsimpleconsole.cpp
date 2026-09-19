@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QFontDatabase>
 #include <QMenu>
 #include <QMimeData>
 #include <QPalette>
@@ -36,7 +37,12 @@ QSimpleConsole::QSimpleConsole(QWidget *parent)
     : QPlainTextEdit(parent)
 {
 	setUndoRedoEnabled(false); // TODO: Support undo/redo
-	setFont(QFont("Source Code Pro"));
+	// Ask the platform for its fixed-width face rather than naming one: a
+	// missing family falls back to a proportional font, which is the one thing
+	// a console must not be.
+	QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+	font.setStyleHint(QFont::Monospace);
+	setFont(font);
 
 	QTextCursor cursor = textCursor();
 	cursor.insertText(promptText);

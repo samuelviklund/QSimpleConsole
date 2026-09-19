@@ -2,14 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(QSimpleConsole VERSION 1.2.0 LANGUAGES CXX)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Qt setup
+# Qt setup. AUTOUIC and AUTORCC are omitted: there are no .ui or .qrc files.
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
 # Find Qt (supports both Qt5 and Qt6)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
@@ -32,6 +26,9 @@ target_include_directories(qsimpleconsole
 
 # So that add_subdirectory() and find_package() consumers spell it the same way
 add_library(QSimpleConsole::qsimpleconsole ALIAS qsimpleconsole)
+
+# PUBLIC so the requirement is exported and reaches find_package() consumers
+target_compile_features(qsimpleconsole PUBLIC cxx_std_17)
 
 # Link against Qt
 target_link_libraries(qsimpleconsole
@@ -94,4 +91,10 @@ option(QSIMPLECONSOLE_BUILD_TESTS "Build the QSimpleConsole tests" OFF)
 if(QSIMPLECONSOLE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+# Examples
+option(QSIMPLECONSOLE_BUILD_EXAMPLES "Build the QSimpleConsole examples" OFF)
+if(QSIMPLECONSOLE_BUILD_EXAMPLES)
+    add_subdirectory(examples/minimal)
 endif()

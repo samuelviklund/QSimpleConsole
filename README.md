@@ -133,6 +133,8 @@ cd build && ctest --output-on-failure
 
 The tests drive a real widget but need no display server.
 
+`-DQSIMPLECONSOLE_BUILD_EXAMPLES=ON` builds `examples/minimal` in the same way.
+
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)

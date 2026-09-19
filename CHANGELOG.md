@@ -17,6 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `prompt()` reads the prompt back.
 - `prompt`, `timestampEnabled` and `scrollbackLines` are declared as
   `Q_PROPERTY`, so they are reachable from Designer, QML and `setProperty()`.
+- `QSIMPLECONSOLE_BUILD_EXAMPLES` builds `examples/minimal` from the top-level
+  project, alongside the existing `QSIMPLECONSOLE_BUILD_TESTS`.
+
+### Changed
+
+- The console asks the platform for its fixed-width font instead of naming
+  "Source Code Pro". A missing family fell back to a proportional face - on a
+  stock system the console was not monospaced at all. Call `setFont()` if you
+  want a particular family.
+- The exported CMake target carries its C++17 requirement, so
+  `find_package(QSimpleConsole)` consumers no longer have to set the standard
+  themselves.
 
 ### Deprecated
 
