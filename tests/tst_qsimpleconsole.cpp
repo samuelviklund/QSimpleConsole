@@ -45,13 +45,15 @@ private slots:
 	void upDownNavigatesHistory();
 	void historyIsCappedAtMaximum();
 
-	// -- regressions ------------------------------------------------------
+	// -- regression guards: were failing, fixed by the boundary rework -----
 	void mouseSelectAllThenTypeKeepsDocument();          // F01
 	void typingInsideOutputDoesNotCorruptDocument();     // F01
 	void commandStillEmittedAfterMouseSelectAll();       // F01
 	void setPromptRedrawsPrompt();                       // F02
 	void setPromptPreservesPendingCommand();             // F02
 	void handlerMayPrefillNextCommand();                 // F03
+
+	// -- regressions: still open -------------------------------------------
 	void multiLineCommandUsesNewlines();                 // F04
 	void shiftReturnDoesNotInsertRawNewline();           // F05
 	void shiftBackspaceCannotDeletePrompt();             // F05
@@ -316,8 +318,6 @@ void tst_QSimpleConsole::mouseSelectAllThenTypeKeepsDocument()
 	console.setTextCursor(cursor);
 	QTest::keyClicks(&console, "z");
 
-	QEXPECT_FAIL("", "F01: a printable key with a selection crossing the prompt "
-	                 "wipes the prompt and the scrollback", Abort);
 	QVERIFY2(console.toPlainText().startsWith(QStringLiteral("> hello")),
 	         qPrintable("document is now: " + console.toPlainText()));
 }
@@ -335,7 +335,6 @@ void tst_QSimpleConsole::typingInsideOutputDoesNotCorruptDocument()
 	console.setTextCursor(cursor);
 	QTest::keyClicks(&console, "XYZ");
 
-	QEXPECT_FAIL("", "F01: typing before the prompt edits the scrollback", Abort);
 	QCOMPARE(console.toPlainText(), before + QStringLiteral("XYZ"));
 }
 
@@ -354,8 +353,6 @@ void tst_QSimpleConsole::commandStillEmittedAfterMouseSelectAll()
 	QTest::keyClicks(&console, "z");
 	enter(&console, "hi");
 
-	QEXPECT_FAIL("", "F01: the boundary is left out of range, so Return silently "
-	                 "drops every later command", Abort);
 	QCOMPARE(spy.count(), 1);
 }
 
@@ -366,8 +363,6 @@ void tst_QSimpleConsole::setPromptRedrawsPrompt()
 
 	console.setPrompt("$ ");
 
-	QEXPECT_FAIL("", "F02: setPrompt never touches the document, so the new "
-	                 "prompt appears only after the next output", Abort);
 	QCOMPARE(console.toPlainText(), QStringLiteral("$ "));
 }
 
@@ -379,8 +374,6 @@ void tst_QSimpleConsole::setPromptPreservesPendingCommand()
 
 	console.setPrompt("$ ");
 
-	QEXPECT_FAIL("", "F02: the boundary is set past the typed text, which is "
-	                 "then swallowed into the prompt", Abort);
 	QCOMPARE(console.getCommand(), QStringLiteral("abc"));
 }
 
@@ -395,8 +388,6 @@ void tst_QSimpleConsole::handlerMayPrefillNextCommand()
 
 	enter(&console, "go");
 
-	QEXPECT_FAIL("", "F03: handleReturnKey overwrites the boundary after the "
-	                 "emit, stranding anything the handler set up", Abort);
 	QCOMPARE(console.getCommand(), QStringLiteral("prefill"));
 }
 
@@ -426,8 +417,6 @@ void tst_QSimpleConsole::shiftReturnDoesNotInsertRawNewline()
 
 	QTest::keyClick(&console, Qt::Key_Return, Qt::ShiftModifier);
 
-	QEXPECT_FAIL("", "F05: the Shift branch runs before the switch, so Return "
-	                 "is never handled and a bare newline is inserted", Abort);
 	QVERIFY2(!console.toPlainText().endsWith('\n'),
 	         qPrintable("document is now: " + console.toPlainText()));
 }
@@ -440,7 +429,6 @@ void tst_QSimpleConsole::shiftBackspaceCannotDeletePrompt()
 	for (int i = 0; i < 4; ++i)
 		QTest::keyClick(&console, Qt::Key_Backspace, Qt::ShiftModifier);
 
-	QEXPECT_FAIL("", "F05: the Shift branch bypasses the Backspace guard", Abort);
 	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
 }
 
@@ -453,8 +441,6 @@ void tst_QSimpleConsole::shiftHomeThenTypeKeepsPrompt()
 	QTest::keyClick(&console, Qt::Key_Home, Qt::ShiftModifier);
 	QTest::keyClicks(&console, "z");
 
-	QEXPECT_FAIL("", "F05: Shift+Home selects back across the prompt and the "
-	                 "next keystroke replaces it", Abort);
 	QCOMPARE(console.toPlainText(), QStringLiteral("> z"));
 }
 
@@ -469,8 +455,6 @@ void tst_QSimpleConsole::shiftInsertRespectsPromptBoundary()
 
 	QTest::keyClick(&console, Qt::Key_Insert, Qt::ShiftModifier);
 
-	QEXPECT_FAIL("", "F06: modifiers == ControlModifier misses Shift+Insert, "
-	                 "the platform's other paste binding", Abort);
 	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
 }
 
@@ -501,8 +485,6 @@ void tst_QSimpleConsole::silentHandlerKeepsInputRetentionWorking()
 
 	console.appendOutput("LATE");
 
-	QEXPECT_FAIL("", "F08: isUserInput is never cleared, so the next async "
-	                 "output discards the pending input", Abort);
 	QCOMPARE(console.getCommand(), QStringLiteral("typing"));
 }
 

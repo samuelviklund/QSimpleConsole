@@ -32,6 +32,12 @@ protected:
 	void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
+	// The boundary between the prompt and what the user may edit is derived
+	// from the document rather than cached, so it cannot go stale.
+	int promptEnd() const;
+	bool isEditRegion(const QTextCursor &cursor) const;
+	void moveCursorToInputEnd();
+
 	void handleCut(QKeyEvent *event);
 	void handlePaste(QKeyEvent *event);
 	void handleSelectAll(QKeyEvent *event);
@@ -46,7 +52,6 @@ private:
 	void pushHistoryCommand(const QString &command);
 
 	QString prompt = "> ";
-	int32_t promptEndPosition;
 	std::deque<QString> history;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
