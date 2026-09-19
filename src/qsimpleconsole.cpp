@@ -8,6 +8,8 @@
 #include <QRegularExpression>
 #include <QTextBlock>
 
+#include <memory>
+
 namespace {
 
 /* True for the keys that would put text into the document. Copy, undo and the
@@ -399,7 +401,7 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 
 void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 {
-	QMenu *menu = createStandardContextMenu();
+	std::unique_ptr<QMenu> menu(createStandardContextMenu());
 	QAction *action;
 
 	if ((action = menu->findChild<QAction*>("edit-cut")))
@@ -410,7 +412,6 @@ void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 		action->setEnabled(canPaste());
 
 	menu->exec(event->globalPos());
-	delete menu;
 }
 
 /* Every insertion the user can make - Ctrl+V, Shift+Insert, middle-click,
