@@ -45,3 +45,10 @@ set_target_properties(qsimpleconsole PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
     ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
 )
+
+# Tests
+option(QSIMPLECONSOLE_BUILD_TESTS "Build the QSimpleConsole tests" OFF)
+if(QSIMPLECONSOLE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
