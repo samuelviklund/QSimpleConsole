@@ -113,10 +113,10 @@ void QSimpleConsole::handleCut(QKeyEvent *event)
 {
 	event->accept();
 
-	QTextCursor cursor = textCursor();
-	if (cursor.selectionStart() < promptEnd())
+	if (!canCut())
 		return;
 
+	QTextCursor cursor = textCursor();
 	QApplication::clipboard()->setText(cursor.selectedText());
 	cursor.removeSelectedText();
 
@@ -141,17 +141,19 @@ void QSimpleConsole::handleUpKey(QKeyEvent *event)
 	if (history.empty() || historyIndex >= (int32_t) history.size() - 1)
 		return;
 
+	if (historyIndex < 0)
+		historyDraft = getCommand();
+
 	historyIndex++;
 
 	setCurrentCommand(history.at(historyIndex));
-
 }
 
 void QSimpleConsole::handleDownKey(QKeyEvent *event)
 {
 	event->accept();
 
-	if (history.empty())
+	if (historyIndex < 0)
 		return;
 
 	if (historyIndex > 0) {
@@ -161,7 +163,8 @@ void QSimpleConsole::handleDownKey(QKeyEvent *event)
 	}
 
 	historyIndex = -1;
-	setCurrentCommand("");
+	setCurrentCommand(historyDraft);
+	historyDraft.clear();
 }
 
 void QSimpleConsole::handleLeftRightKey(QKeyEvent *event)
@@ -190,6 +193,7 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 
 	const QString command = getCommand();
 	historyIndex = -1;
+	historyDraft.clear();
 
 	if (command.isEmpty()) {
 		cursor.movePosition(QTextCursor::End);
@@ -221,9 +225,9 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
+	const int end = promptEnd();
 
-	if ((cursor.selectedText().length() == 0 && cursor.position() >= promptEnd()) ||
-	    (cursor.selectedText().length() > 0 && cursor.selectionStart() > (promptEnd() - 1))) {
+	if (cursor.hasSelection() ? cursor.selectionStart() >= end : cursor.position() >= end) {
 		QPlainTextEdit::keyPressEvent(event);
 		return;
 	}
@@ -234,14 +238,38 @@ void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
+	const int end = promptEnd();
 
-	if ((cursor.selectedText().length() == 0 && cursor.position() > promptEnd()) ||
-	    (cursor.selectedText().length() > 0 && cursor.selectionStart() > (promptEnd() - 1))) {
-		QPlainTextEdit::keyPressEvent(event);
+	if (cursor.hasSelection()) {
+		if (cursor.selectionStart() >= end)
+			QPlainTextEdit::keyPressEvent(event);
+		else
+			event->accept();
+
 		return;
 	}
 
-	event->accept();
+	if (cursor.position() <= end) {
+		event->accept();
+
+		return;
+	}
+
+	// A word-wise delete can reach back past the prompt, so make the deletion
+	// here rather than delegating it, and stop it at the boundary.
+	if (event->matches(QKeySequence::DeleteStartOfWord)) {
+		event->accept();
+
+		cursor.movePosition(QTextCursor::PreviousWord, QTextCursor::KeepAnchor);
+		if (cursor.position() < end)
+			cursor.setPosition(end, QTextCursor::KeepAnchor);
+		cursor.removeSelectedText();
+		setTextCursor(cursor);
+
+		return;
+	}
+
+	QPlainTextEdit::keyPressEvent(event);
 }
 
 void QSimpleConsole::handleHomeKey(QKeyEvent *event)
@@ -282,7 +310,7 @@ void QSimpleConsole::appendOutput(const QString &result)
 	QString command = getCommand();
 
 	if (!isUserInput) {
-		cursor.select(QTextCursor::LineUnderCursor);
+		cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
 		cursor.removeSelectedText();
 	} else {
 		cursor.insertText("\n");
@@ -397,6 +425,9 @@ void QSimpleConsole::insertFromMimeData(const QMimeData *source)
 
 void QSimpleConsole::pushHistoryCommand(const QString &command)
 {
+	if (!history.empty() && history.front() == command)
+		return;
+
 	history.push_front(command);
 	if (history.size() > historySizeMax)
 		history.pop_back();

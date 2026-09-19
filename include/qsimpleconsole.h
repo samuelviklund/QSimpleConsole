@@ -53,6 +53,7 @@ private:
 
 	QString prompt = "> ";
 	std::deque<QString> history;
+	QString historyDraft;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
 	bool isUserInput = false;

@@ -11,14 +11,13 @@
 /*
  * Two kinds of test live here.
  *
- *  - Regressions: behaviour that is wrong today. Each is marked QEXPECT_FAIL
- *    with the finding id from FINDINGS.html, so the suite is green as it
- *    stands. When a fix lands the test reports an unexpected pass, which
- *    fails the run until the marker is removed - the fix cannot be claimed
- *    without the evidence.
+ *  - Regression guards: behaviour that was wrong and has been fixed. Each
+ *    carries the finding id from FINDINGS.html. They were written first, as
+ *    QEXPECT_FAIL, so that landing a fix turned the suite red until the
+ *    marker came out - no fix was claimed without the evidence.
  *
- *  - Characterization: behaviour that is correct today and must survive the
- *    prompt-boundary rework (F15). These carry no marker and must always pass.
+ *  - Characterization: behaviour that was already correct and had to survive
+ *    the prompt-boundary rework.
  */
 class tst_QSimpleConsole : public QObject
 {
@@ -58,14 +57,12 @@ private slots:
 	void shiftBackspaceCannotDeletePrompt();             // F05
 	void shiftHomeThenTypeKeepsPrompt();                 // F05
 	void shiftInsertRespectsPromptBoundary();            // F06
-	void silentHandlerKeepsInputRetentionWorking();      // F08
-	void pastedNewlinesDoNotBreakThePromptLine();        // F11
-	void droppedTextLandsInTheInputLine();               // F12
-
-	// -- regressions: still open -------------------------------------------
 	void asyncOutputPreservesWrappedInput();             // F07
+	void silentHandlerKeepsInputRetentionWorking();      // F08
 	void ctrlBackspaceCannotDeleteAlphanumericPrompt();  // F09
 	void cutWithoutSelectionKeepsClipboard();            // F10
+	void pastedNewlinesDoNotBreakThePromptLine();        // F11
+	void droppedTextLandsInTheInputLine();               // F12
 	void historyRestoresDraftLine();                     // F21
 	void historySkipsConsecutiveDuplicates();            // F21
 };
@@ -486,8 +483,6 @@ void tst_QSimpleConsole::asyncOutputPreservesWrappedInput()
 
 	console.appendOutput("ASYNC");
 
-	QEXPECT_FAIL("", "F07: LineUnderCursor removes a visual line, not a block, "
-	                 "so the wrapped remainder is left glued to the output", Abort);
 	QCOMPARE(console.toPlainText(),
 	         QStringLiteral("ASYNC\n> aaaa bbbb cccc dddd eeee ffff gggg hhhh"));
 }
@@ -517,8 +512,6 @@ void tst_QSimpleConsole::ctrlBackspaceCannotDeleteAlphanumericPrompt()
 
 	QTest::keyClick(&console, Qt::Key_Backspace, Qt::ControlModifier);
 
-	QEXPECT_FAIL("", "F09: the word-wise delete crosses the boundary when the "
-	                 "prompt has no trailing punctuation", Abort);
 	QVERIFY2(console.toPlainText().endsWith(QStringLiteral("abc")),
 	         qPrintable("document is now: " + console.toPlainText()));
 }
@@ -532,8 +525,6 @@ void tst_QSimpleConsole::cutWithoutSelectionKeepsClipboard()
 
 	QTest::keyClick(&console, Qt::Key_X, Qt::ControlModifier);
 
-	QEXPECT_FAIL("", "F10: handleCut writes the empty selection to the "
-	                 "clipboard before checking hasSelection", Abort);
 	QCOMPARE(QApplication::clipboard()->text(), QStringLiteral("PRECIOUS"));
 }
 
@@ -581,8 +572,6 @@ void tst_QSimpleConsole::historyRestoresDraftLine()
 	QTest::keyClick(&console, Qt::Key_Up);
 	QTest::keyClick(&console, Qt::Key_Down);
 
-	QEXPECT_FAIL("", "F21: the draft line is discarded by the first Up and "
-	                 "never restored", Abort);
 	QCOMPARE(console.getCommand(), QStringLiteral("draft"));
 }
 
@@ -599,8 +588,6 @@ void tst_QSimpleConsole::historySkipsConsecutiveDuplicates()
 	QCOMPARE(console.getCommand(), QStringLiteral("two"));
 	QTest::keyClick(&console, Qt::Key_Up);
 
-	QEXPECT_FAIL("", "F21: consecutive duplicates are stored twice, so Up "
-	                 "appears not to move", Abort);
 	QCOMPARE(console.getCommand(), QStringLiteral("one"));
 }
 
