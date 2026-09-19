@@ -3,7 +3,9 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QMenu>
+#include <QMimeData>
 #include <QPalette>
+#include <QRegularExpression>
 #include <QTextBlock>
 
 namespace {
@@ -88,6 +90,7 @@ QString QSimpleConsole::getCommand()
 	cursor.movePosition(QTextCursor::End);
 	cursor.setPosition(promptEnd(), QTextCursor::KeepAnchor);
 	command = cursor.selectedText();
+	command.replace(QChar::ParagraphSeparator, QChar::LineFeed);
 	command.replace(QChar::LineSeparator, QChar::LineFeed);
 
 	setTextCursor(cursor);
@@ -118,19 +121,6 @@ void QSimpleConsole::handleCut(QKeyEvent *event)
 	cursor.removeSelectedText();
 
 	setTextCursor(cursor);
-}
-
-void QSimpleConsole::handlePaste(QKeyEvent *event)
-{
-	QTextCursor cursor = textCursor();
-
-	if (cursor.position() < promptEnd()) {
-		event->accept();
-
-		return;
-	}
-
-	QPlainTextEdit::keyPressEvent(event);
 }
 
 void QSimpleConsole::handleSelectAll(QKeyEvent *event)
@@ -281,7 +271,7 @@ bool QSimpleConsole::canCut() const
 
 bool QSimpleConsole::canPaste() const
 {
-	return textCursor().position() >= promptEnd();
+	return !QApplication::clipboard()->text().isEmpty();
 }
 
 void QSimpleConsole::appendOutput(const QString &result)
@@ -318,11 +308,6 @@ void QSimpleConsole::appendOutput(const QString &result)
 
 void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 {
-	if (event->matches(QKeySequence::Paste)) {
-		handlePaste(event);
-		return;
-	}
-
 	if (event->matches(QKeySequence::Cut)) {
 		handleCut(event);
 		return;
@@ -384,6 +369,30 @@ void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 
 	menu->exec(event->globalPos());
 	delete menu;
+}
+
+/* Every insertion the user can make - Ctrl+V, Shift+Insert, middle-click,
+ * drag and drop, the context menu - arrives here, so this is the one place
+ * that has to keep text inside the input line. */
+void QSimpleConsole::insertFromMimeData(const QMimeData *source)
+{
+	QString text = source->text();
+	if (text.isEmpty())
+		return;
+
+	if (!isEditRegion(textCursor()))
+		moveCursorToInputEnd();
+
+	while (text.endsWith('\n') || text.endsWith('\r'))
+		text.chop(1);
+
+	// The prompt opens a single block, so a pasted line break would leave a
+	// line with no prompt on it. Fold the breaks into spaces instead, which
+	// keeps every character of the paste visible and editable.
+	text.replace(QRegularExpression(QStringLiteral("[\\r\\n\\x{2028}\\x{2029}]+")),
+	             QStringLiteral(" "));
+
+	textCursor().insertText(text);
 }
 
 void QSimpleConsole::pushHistoryCommand(const QString &command)

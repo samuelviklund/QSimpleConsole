@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QMimeData>
 #include <QSignalSpy>
 #include <QTextBlock>
 
@@ -45,25 +46,26 @@ private slots:
 	void upDownNavigatesHistory();
 	void historyIsCappedAtMaximum();
 
-	// -- regression guards: were failing, fixed by the boundary rework -----
+	// -- regression guards: were failing, now fixed ------------------------
 	void mouseSelectAllThenTypeKeepsDocument();          // F01
 	void typingInsideOutputDoesNotCorruptDocument();     // F01
 	void commandStillEmittedAfterMouseSelectAll();       // F01
 	void setPromptRedrawsPrompt();                       // F02
 	void setPromptPreservesPendingCommand();             // F02
 	void handlerMayPrefillNextCommand();                 // F03
-
-	// -- regressions: still open -------------------------------------------
 	void multiLineCommandUsesNewlines();                 // F04
 	void shiftReturnDoesNotInsertRawNewline();           // F05
 	void shiftBackspaceCannotDeletePrompt();             // F05
 	void shiftHomeThenTypeKeepsPrompt();                 // F05
 	void shiftInsertRespectsPromptBoundary();            // F06
-	void asyncOutputPreservesWrappedInput();             // F07
 	void silentHandlerKeepsInputRetentionWorking();      // F08
+	void pastedNewlinesDoNotBreakThePromptLine();        // F11
+	void droppedTextLandsInTheInputLine();               // F12
+
+	// -- regressions: still open -------------------------------------------
+	void asyncOutputPreservesWrappedInput();             // F07
 	void ctrlBackspaceCannotDeleteAlphanumericPrompt();  // F09
 	void cutWithoutSelectionKeepsClipboard();            // F10
-	void pastedNewlinesDoNotBreakThePromptLine();        // F11
 	void historyRestoresDraftLine();                     // F21
 	void historySkipsConsecutiveDuplicates();            // F21
 };
@@ -83,6 +85,14 @@ void enter(QSimpleConsole *console, const QString &command)
 	QTest::keyClicks(console, command);
 	QTest::keyClick(console, Qt::Key_Return);
 }
+
+/* insertFromMimeData is protected, and the drop and middle-click paths reach
+ * it without going through a key event, so a test needs the same access. */
+class PastableConsole : public QSimpleConsole
+{
+public:
+	using QSimpleConsole::insertFromMimeData;
+};
 
 } // namespace
 
@@ -396,17 +406,23 @@ void tst_QSimpleConsole::multiLineCommandUsesNewlines()
 	QSimpleConsole console;
 	console.show();
 	QSignalSpy spy(&console, &QSimpleConsole::commandEntered);
-	QApplication::clipboard()->setText("aa\nbb");
 
-	QTest::keyClick(&console, Qt::Key_V, Qt::ControlModifier);
+	// No input path produces a block break any more, but getCommand still has
+	// to translate one if it ever appears.
+	QTextCursor cursor = console.textCursor();
+	cursor.movePosition(QTextCursor::End);
+	cursor.insertText("aa");
+	cursor.insertBlock();
+	cursor.insertText("bb");
+	console.setTextCursor(cursor);
+
 	QTest::keyClick(&console, Qt::Key_Return);
 
 	QCOMPARE(spy.count(), 1);
 	const QString command = spy.at(0).at(0).toString();
-	QEXPECT_FAIL("", "F04: getCommand replaces U+2028 but selectedText emits "
-	                 "U+2029 for block breaks", Abort);
 	QVERIFY2(!command.contains(QChar::ParagraphSeparator),
 	         "command still carries a U+2029 paragraph separator");
+	QCOMPARE(command, QStringLiteral("aa\nbb"));
 }
 
 void tst_QSimpleConsole::shiftReturnDoesNotInsertRawNewline()
@@ -448,14 +464,17 @@ void tst_QSimpleConsole::shiftInsertRespectsPromptBoundary()
 {
 	QSimpleConsole console;
 	console.show();
+	echoCommands(&console);
+	enter(&console, "hello");
 	QApplication::clipboard()->setText("PASTED");
 	QTextCursor cursor = console.textCursor();
-	cursor.setPosition(0);
+	cursor.setPosition(1);              // inside the scrollback
 	console.setTextCursor(cursor);
 
 	QTest::keyClick(&console, Qt::Key_Insert, Qt::ShiftModifier);
 
-	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
+	QCOMPARE(console.toPlainText(), QStringLiteral("> hello\nhello\n> PASTED"));
+	QCOMPARE(console.getCommand(), QStringLiteral("PASTED"));
 }
 
 void tst_QSimpleConsole::asyncOutputPreservesWrappedInput()
@@ -522,12 +541,33 @@ void tst_QSimpleConsole::pastedNewlinesDoNotBreakThePromptLine()
 {
 	QSimpleConsole console;
 	console.show();
-	QApplication::clipboard()->setText("aa\nbb");
+	QApplication::clipboard()->setText("aa\nbb\n");
 
 	QTest::keyClick(&console, Qt::Key_V, Qt::ControlModifier);
 
-	QEXPECT_FAIL("", "F11: pasted newlines create blocks with no prompt", Abort);
 	QCOMPARE(console.document()->blockCount(), 1);
+	QCOMPARE(console.toPlainText(), QStringLiteral("> aa bb"));
+	QCOMPARE(console.getCommand(), QStringLiteral("aa bb"));
+}
+
+void tst_QSimpleConsole::droppedTextLandsInTheInputLine()
+{
+	PastableConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "hello");
+	const QString before = console.toPlainText();
+
+	QTextCursor cursor = console.textCursor();
+	cursor.setPosition(1);              // where a drop into the scrollback lands
+	console.setTextCursor(cursor);
+
+	QMimeData mime;
+	mime.setText("DROPPED");
+	console.insertFromMimeData(&mime);
+
+	QCOMPARE(console.toPlainText(), before + QStringLiteral("DROPPED"));
+	QCOMPARE(console.getCommand(), QStringLiteral("DROPPED"));
 }
 
 void tst_QSimpleConsole::historyRestoresDraftLine()

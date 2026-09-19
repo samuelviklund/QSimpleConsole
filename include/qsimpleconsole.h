@@ -30,6 +30,7 @@ signals:
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
 	void contextMenuEvent(QContextMenuEvent *event) override;
+	void insertFromMimeData(const QMimeData *source) override;
 
 private:
 	// The boundary between the prompt and what the user may edit is derived
@@ -39,7 +40,6 @@ private:
 	void moveCursorToInputEnd();
 
 	void handleCut(QKeyEvent *event);
-	void handlePaste(QKeyEvent *event);
 	void handleSelectAll(QKeyEvent *event);
 	void handleUpKey(QKeyEvent *event);
 	void handleDownKey(QKeyEvent *event);
