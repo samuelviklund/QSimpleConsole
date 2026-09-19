@@ -28,7 +28,7 @@ private slots:
 	void promptIsDrawnOnConstruction();
 	void typedTextIsEmittedAsCommand();
 	void emptyReturnDrawsNewPrompt();
-	void homeMovesToPromptEnd();
+	void homeMovesToInputStart();
 	void backspaceCannotDeletePrompt();
 	void deleteWithFullSelectionIsRefused();
 	void backspaceWithFullSelectionIsRefused();
@@ -46,8 +46,8 @@ private slots:
 	void historyIsCappedAtMaximum();
 
 	// -- regression guards: were failing, now fixed ------------------------
-	void mouseSelectAllThenTypeKeepsDocument();          // F01
-	void typingInsideOutputDoesNotCorruptDocument();     // F01
+	void mouseSelectAllThenTypeKeepsPrompt();            // F01
+	void typingInsideOutputAppendsToInput();             // F01
 	void commandStillEmittedAfterMouseSelectAll();       // F01
 	void setPromptRedrawsPrompt();                       // F02
 	void setPromptPreservesPendingCommand();             // F02
@@ -58,11 +58,11 @@ private slots:
 	void shiftHomeThenTypeKeepsPrompt();                 // F05
 	void shiftInsertRespectsPromptBoundary();            // F06
 	void asyncOutputPreservesWrappedInput();             // F07
-	void silentHandlerKeepsInputRetentionWorking();      // F08
+	void silentHandlerPreservesPendingInput();           // F08
 	void ctrlBackspaceCannotDeleteAlphanumericPrompt();  // F09
 	void cutWithoutSelectionKeepsClipboard();            // F10
-	void pastedNewlinesDoNotBreakThePromptLine();        // F11
-	void droppedTextLandsInTheInputLine();               // F12
+	void pastedNewlinesStayOnOneLine();                  // F11
+	void droppedTextLandsInInput();                      // F12
 	void historyRestoresDraftLine();                     // F21
 	void historySkipsConsecutiveDuplicates();            // F21
 };
@@ -130,7 +130,7 @@ void tst_QSimpleConsole::emptyReturnDrawsNewPrompt()
 	QCOMPARE(console.toPlainText(), QStringLiteral("> \n> "));
 }
 
-void tst_QSimpleConsole::homeMovesToPromptEnd()
+void tst_QSimpleConsole::homeMovesToInputStart()
 {
 	QSimpleConsole console;
 	console.show();
@@ -197,8 +197,8 @@ void tst_QSimpleConsole::ctrlLeftCannotCrossPromptBoundary()
 	for (int i = 0; i < 6; ++i)
 		QTest::keyClick(&console, Qt::Key_Left, Qt::ControlModifier);
 
-	const int promptEnd = console.document()->lastBlock().position() + 2;
-	QCOMPARE(console.textCursor().position(), promptEnd);
+	const int inputStart = console.document()->lastBlock().position() + 2;
+	QCOMPARE(console.textCursor().position(), inputStart);
 }
 
 void tst_QSimpleConsole::selectAllSelectsOnlyTheCommand()
@@ -312,7 +312,7 @@ void tst_QSimpleConsole::historyIsCappedAtMaximum()
 // regressions
 // ---------------------------------------------------------------------------
 
-void tst_QSimpleConsole::mouseSelectAllThenTypeKeepsDocument()
+void tst_QSimpleConsole::mouseSelectAllThenTypeKeepsPrompt()
 {
 	QSimpleConsole console;
 	console.show();
@@ -329,7 +329,7 @@ void tst_QSimpleConsole::mouseSelectAllThenTypeKeepsDocument()
 	         qPrintable("document is now: " + console.toPlainText()));
 }
 
-void tst_QSimpleConsole::typingInsideOutputDoesNotCorruptDocument()
+void tst_QSimpleConsole::typingInsideOutputAppendsToInput()
 {
 	QSimpleConsole console;
 	console.show();
@@ -487,7 +487,7 @@ void tst_QSimpleConsole::asyncOutputPreservesWrappedInput()
 	         QStringLiteral("ASYNC\n> aaaa bbbb cccc dddd eeee ffff gggg hhhh"));
 }
 
-void tst_QSimpleConsole::silentHandlerKeepsInputRetentionWorking()
+void tst_QSimpleConsole::silentHandlerPreservesPendingInput()
 {
 	QSimpleConsole console;
 	console.show();
@@ -528,7 +528,7 @@ void tst_QSimpleConsole::cutWithoutSelectionKeepsClipboard()
 	QCOMPARE(QApplication::clipboard()->text(), QStringLiteral("PRECIOUS"));
 }
 
-void tst_QSimpleConsole::pastedNewlinesDoNotBreakThePromptLine()
+void tst_QSimpleConsole::pastedNewlinesStayOnOneLine()
 {
 	QSimpleConsole console;
 	console.show();
@@ -541,7 +541,7 @@ void tst_QSimpleConsole::pastedNewlinesDoNotBreakThePromptLine()
 	QCOMPARE(console.getCommand(), QStringLiteral("aa bb"));
 }
 
-void tst_QSimpleConsole::droppedTextLandsInTheInputLine()
+void tst_QSimpleConsole::droppedTextLandsInInput()
 {
 	PastableConsole console;
 	console.show();

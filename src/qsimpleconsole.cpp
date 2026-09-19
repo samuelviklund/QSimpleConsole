@@ -39,7 +39,7 @@ QSimpleConsole::QSimpleConsole(QWidget *parent)
 	setTextCursor(cursor);
 }
 
-int QSimpleConsole::promptEnd() const
+int QSimpleConsole::inputStart() const
 {
 	// The prompt opens the last block. Multi-line input leaves the blocks after
 	// the first without one, so fall back to the most recent block that carries
@@ -52,11 +52,11 @@ int QSimpleConsole::promptEnd() const
 	return 0;
 }
 
-bool QSimpleConsole::isEditRegion(const QTextCursor &cursor) const
+bool QSimpleConsole::canEditAt(const QTextCursor &cursor) const
 {
-	const int end = promptEnd();
+	const int start = inputStart();
 
-	return cursor.selectionStart() >= end && cursor.position() >= end;
+	return cursor.selectionStart() >= start && cursor.position() >= start;
 }
 
 void QSimpleConsole::moveCursorToInputEnd()
@@ -89,7 +89,7 @@ QString QSimpleConsole::getCommand()
 	QString command;
 
 	cursor.movePosition(QTextCursor::End);
-	cursor.setPosition(promptEnd(), QTextCursor::KeepAnchor);
+	cursor.setPosition(inputStart(), QTextCursor::KeepAnchor);
 	command = cursor.selectedText();
 	command.replace(QChar::ParagraphSeparator, QChar::LineFeed);
 	command.replace(QChar::LineSeparator, QChar::LineFeed);
@@ -103,7 +103,7 @@ void QSimpleConsole::setCurrentCommand(const QString &command)
 {
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
-	cursor.setPosition(promptEnd(), QTextCursor::KeepAnchor);
+	cursor.setPosition(inputStart(), QTextCursor::KeepAnchor);
 	cursor.insertText(command);
 	cursor.movePosition(QTextCursor::End);
 
@@ -128,7 +128,7 @@ void QSimpleConsole::handleSelectAll(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
-	cursor.setPosition(promptEnd(), QTextCursor::KeepAnchor);
+	cursor.setPosition(inputStart(), QTextCursor::KeepAnchor);
 
 	setTextCursor(cursor);
 
@@ -173,8 +173,8 @@ void QSimpleConsole::handleLeftRightKey(QKeyEvent *event)
 	QTextCursor cursor = textCursor();
 	int8_t offset = event->key() == Qt::Key_Left ? -1 : 1;
 
-	if (cursor.position() + offset < promptEnd()) {
-		cursor.setPosition(promptEnd());
+	if (cursor.position() + offset < inputStart()) {
+		cursor.setPosition(inputStart());
 		setTextCursor(cursor);
 		event->accept();
 
@@ -205,13 +205,13 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 		return;
 	}
 
-	pushHistoryCommand(command);
+	addToHistory(command);
 
 	const int revision = document()->revision();
 
-	isUserInput = true;
+	handlingSubmittedCommand = true;
 	emit commandEntered(command);
-	isUserInput = false;
+	handlingSubmittedCommand = false;
 
 	// A handler that wrote no output has left the command line open. Close it,
 	// so the last block is always a prompt followed by pending input.
@@ -226,9 +226,9 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
-	const int end = promptEnd();
+	const int start = inputStart();
 
-	if (cursor.hasSelection() ? cursor.selectionStart() >= end : cursor.position() >= end) {
+	if (cursor.hasSelection() ? cursor.selectionStart() >= start : cursor.position() >= start) {
 		QPlainTextEdit::keyPressEvent(event);
 		return;
 	}
@@ -239,10 +239,10 @@ void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
-	const int end = promptEnd();
+	const int start = inputStart();
 
 	if (cursor.hasSelection()) {
-		if (cursor.selectionStart() >= end)
+		if (cursor.selectionStart() >= start)
 			QPlainTextEdit::keyPressEvent(event);
 		else
 			event->accept();
@@ -250,7 +250,7 @@ void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 		return;
 	}
 
-	if (cursor.position() <= end) {
+	if (cursor.position() <= start) {
 		event->accept();
 
 		return;
@@ -262,8 +262,8 @@ void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 		event->accept();
 
 		cursor.movePosition(QTextCursor::PreviousWord, QTextCursor::KeepAnchor);
-		if (cursor.position() < end)
-			cursor.setPosition(end, QTextCursor::KeepAnchor);
+		if (cursor.position() < start)
+			cursor.setPosition(start, QTextCursor::KeepAnchor);
 		cursor.removeSelectedText();
 		setTextCursor(cursor);
 
@@ -278,7 +278,7 @@ void QSimpleConsole::handleHomeKey(QKeyEvent *event)
 	event->accept();
 
 	QTextCursor cursor = textCursor();
-	cursor.setPosition(promptEnd(), event->modifiers() & Qt::ShiftModifier
+	cursor.setPosition(inputStart(), event->modifiers() & Qt::ShiftModifier
 	                                    ? QTextCursor::KeepAnchor
 	                                    : QTextCursor::MoveAnchor);
 
@@ -292,7 +292,7 @@ bool QSimpleConsole::canCut() const
 	if (!cursor.hasSelection())
 		return false;
 
-	if (cursor.selectionStart() < promptEnd())
+	if (cursor.selectionStart() < inputStart())
 		return false;
 
 	return true;
@@ -303,14 +303,14 @@ bool QSimpleConsole::canPaste() const
 	return !QApplication::clipboard()->text().isEmpty();
 }
 
-void QSimpleConsole::appendOutput(const QString &result)
+void QSimpleConsole::appendOutput(const QString &output)
 {
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
 
 	QString command = getCommand();
 
-	if (!isUserInput) {
+	if (!handlingSubmittedCommand) {
 		cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
 		cursor.removeSelectedText();
 	} else {
@@ -321,16 +321,15 @@ void QSimpleConsole::appendOutput(const QString &result)
 		cursor.insertText(QTime::currentTime().toString("hh:mm:ss") + ": ");
 	}
 
-	cursor.insertText(result);
+	cursor.insertText(output);
 	cursor.insertText("\n");
 	cursor.insertText(prompt);
 
-	if (!isUserInput && !command.isEmpty()) {
+	if (!handlingSubmittedCommand && !command.isEmpty()) {
 		cursor.insertText(command);
 	}
 
-	if (isUserInput)
-		isUserInput = false;
+	handlingSubmittedCommand = false;
 
 	setTextCursor(cursor);
 }
@@ -378,7 +377,7 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 	// Anything that would insert text has to land after the prompt. Typing
 	// outside the editable region moves to the input instead of editing the
 	// scrollback, which is what a terminal does.
-	if (insertsText(event) && !isEditRegion(textCursor()))
+	if (insertsText(event) && !canEditAt(textCursor()))
 		moveCursorToInputEnd();
 
 	QPlainTextEdit::keyPressEvent(event);
@@ -409,7 +408,7 @@ void QSimpleConsole::insertFromMimeData(const QMimeData *source)
 	if (text.isEmpty())
 		return;
 
-	if (!isEditRegion(textCursor()))
+	if (!canEditAt(textCursor()))
 		moveCursorToInputEnd();
 
 	while (text.endsWith('\n') || text.endsWith('\r'))
@@ -424,7 +423,7 @@ void QSimpleConsole::insertFromMimeData(const QMimeData *source)
 	textCursor().insertText(text);
 }
 
-void QSimpleConsole::pushHistoryCommand(const QString &command)
+void QSimpleConsole::addToHistory(const QString &command)
 {
 	if (!history.empty() && history.front() == command)
 		return;

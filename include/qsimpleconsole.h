@@ -22,7 +22,7 @@ public:
 	bool canPaste() const;
 
 public slots:
-	void appendOutput(const QString &result);
+	void appendOutput(const QString &output);
 
 signals:
 	void commandEntered(const QString &command);
@@ -35,8 +35,8 @@ protected:
 private:
 	// The boundary between the prompt and what the user may edit is derived
 	// from the document rather than cached, so it cannot go stale.
-	int promptEnd() const;
-	bool isEditRegion(const QTextCursor &cursor) const;
+	int inputStart() const;
+	bool canEditAt(const QTextCursor &cursor) const;
 	void moveCursorToInputEnd();
 
 	void handleCut(QKeyEvent *event);
@@ -49,14 +49,14 @@ private:
 	void handleBackspaceKey(QKeyEvent *event);
 	void handleHomeKey(QKeyEvent *event);
 
-	void pushHistoryCommand(const QString &command);
+	void addToHistory(const QString &command);
 
 	QString prompt = "> ";
 	std::deque<QString> history;
 	QString historyDraft;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
-	bool isUserInput = false;
+	bool handlingSubmittedCommand = false;
 	bool useTimestamp = false;
 };
 
