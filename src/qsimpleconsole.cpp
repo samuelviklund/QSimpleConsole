@@ -41,7 +41,7 @@ QSimpleConsole::QSimpleConsole(QWidget *parent)
 	setTextCursor(cursor);
 }
 
-int QSimpleConsole::inputStart() const
+int32_t QSimpleConsole::inputStart() const
 {
 	// The promptText opens the last block. Multi-line input leaves the blocks after
 	// the first without one, so fall back to the most recent block that carries
@@ -57,7 +57,7 @@ int QSimpleConsole::inputStart() const
 
 bool QSimpleConsole::canEditAt(const QTextCursor &cursor) const
 {
-	const int start = inputStart();
+	const int32_t start = inputStart();
 
 	return cursor.selectionStart() >= start && cursor.position() >= start;
 }
@@ -99,16 +99,16 @@ QString QSimpleConsole::currentCommand() const
 	return command;
 }
 
-void QSimpleConsole::setScrollbackLines(int lines)
+void QSimpleConsole::setScrollbackLines(int32_t lines)
 {
 	// The block limit counts the input line too, so one more than the number of
 	// scrollback lines the caller asked for. Qt reads 0 as "no limit".
 	setMaximumBlockCount(lines > 0 ? lines + 1 : 0);
 }
 
-int QSimpleConsole::scrollbackLines() const
+int32_t QSimpleConsole::scrollbackLines() const
 {
-	const int blocks = maximumBlockCount();
+	const int32_t blocks = maximumBlockCount();
 
 	return blocks > 0 ? blocks - 1 : 0;
 }
@@ -185,7 +185,7 @@ void QSimpleConsole::handleDownKey(QKeyEvent *event)
 void QSimpleConsole::handleLeftRightKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
-	int8_t offset = event->key() == Qt::Key_Left ? -1 : 1;
+	int32_t offset = event->key() == Qt::Key_Left ? -1 : 1;
 
 	if (cursor.position() + offset < inputStart()) {
 		cursor.setPosition(inputStart());
@@ -221,7 +221,7 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 
 	addToHistory(command);
 
-	const int revision = document()->revision();
+	const int32_t revision = document()->revision();
 
 	handlingSubmittedCommand = true;
 	emit commandEntered(command);
@@ -240,7 +240,7 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
-	const int start = inputStart();
+	const int32_t start = inputStart();
 
 	if (cursor.hasSelection() ? cursor.selectionStart() >= start : cursor.position() >= start) {
 		QPlainTextEdit::keyPressEvent(event);
@@ -253,7 +253,7 @@ void QSimpleConsole::handleDeleteKey(QKeyEvent *event)
 void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 {
 	QTextCursor cursor = textCursor();
-	const int start = inputStart();
+	const int32_t start = inputStart();
 
 	if (cursor.hasSelection()) {
 		if (cursor.selectionStart() >= start)

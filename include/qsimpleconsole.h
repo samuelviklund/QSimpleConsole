@@ -4,6 +4,7 @@
 #include <QPlainTextEdit>
 #include <QTime>
 
+#include <cstdint>
 #include <deque>
 
 class QSimpleConsole : public QPlainTextEdit
@@ -12,7 +13,7 @@ class QSimpleConsole : public QPlainTextEdit
 
 	Q_PROPERTY(QString prompt READ prompt WRITE setPrompt)
 	Q_PROPERTY(bool timestampEnabled READ isTimestampEnabled WRITE setTimestampEnabled)
-	Q_PROPERTY(int scrollbackLines READ scrollbackLines WRITE setScrollbackLines)
+	Q_PROPERTY(int32_t scrollbackLines READ scrollbackLines WRITE setScrollbackLines)
 
 public:
 	explicit QSimpleConsole(QWidget *parent = nullptr);
@@ -30,8 +31,8 @@ public:
 	// Caps the output lines kept above the input line. A value of 0 or less
 	// keeps every line, which is the default. Capping the scrollback also
 	// disables undo/redo, which is how QPlainTextEdit's block limit behaves.
-	void setScrollbackLines(int lines);
-	int scrollbackLines() const;
+	void setScrollbackLines(int32_t lines);
+	int32_t scrollbackLines() const;
 
 	bool canCut() const;
 	bool canPaste() const;
@@ -67,7 +68,7 @@ protected:
 private:
 	// The boundary between the prompt and what the user may edit is derived
 	// from the document rather than cached, so it cannot go stale.
-	int inputStart() const;
+	int32_t inputStart() const;
 	bool canEditAt(const QTextCursor &cursor) const;
 	void moveCursorToInputEnd();
 

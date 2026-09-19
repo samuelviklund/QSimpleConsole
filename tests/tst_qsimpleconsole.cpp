@@ -1,5 +1,7 @@
 #include <QtTest>
 
+#include <cstdint>
+
 #include <QApplication>
 #include <QClipboard>
 #include <QMimeData>
@@ -155,7 +157,7 @@ void tst_QSimpleConsole::backspaceCannotDeletePrompt()
 	QSimpleConsole console;
 	console.show();
 
-	for (int i = 0; i < 4; ++i)
+	for (int32_t i = 0; i < 4; ++i)
 		QTest::keyClick(&console, Qt::Key_Backspace);
 
 	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
@@ -203,10 +205,10 @@ void tst_QSimpleConsole::ctrlLeftCannotCrossPromptBoundary()
 	enter(&console, "one two");
 	QTest::keyClicks(&console, "three");
 
-	for (int i = 0; i < 6; ++i)
+	for (int32_t i = 0; i < 6; ++i)
 		QTest::keyClick(&console, Qt::Key_Left, Qt::ControlModifier);
 
-	const int inputStart = console.document()->lastBlock().position() + 2;
+	const int32_t inputStart = console.document()->lastBlock().position() + 2;
 	QCOMPARE(console.textCursor().position(), inputStart);
 }
 
@@ -293,7 +295,7 @@ void tst_QSimpleConsole::scrollbackIsUnlimitedByDefault()
 
 	QCOMPARE(console.scrollbackLines(), 0);
 
-	for (int i = 0; i < 200; ++i)
+	for (int32_t i = 0; i < 200; ++i)
 		console.appendOutput(QStringLiteral("line %1").arg(i));
 
 	QCOMPARE(console.document()->blockCount(), 201);
@@ -307,7 +309,7 @@ void tst_QSimpleConsole::scrollbackLinesCapsHistory()
 
 	QCOMPARE(console.scrollbackLines(), 5);
 
-	for (int i = 0; i < 50; ++i)
+	for (int32_t i = 0; i < 50; ++i)
 		console.appendOutput(QStringLiteral("line %1").arg(i));
 
 	// five output lines, plus the input line the limit also counts
@@ -323,7 +325,7 @@ void tst_QSimpleConsole::scrollbackCapPreservesPendingInput()
 	console.setScrollbackLines(3);
 	QTest::keyClicks(&console, "typing");
 
-	for (int i = 0; i < 20; ++i)
+	for (int32_t i = 0; i < 20; ++i)
 		console.appendOutput(QStringLiteral("line %1").arg(i));
 
 	QCOMPARE(console.currentCommand(), QStringLiteral("typing"));
@@ -397,7 +399,7 @@ void tst_QSimpleConsole::currentCommandLeavesTheCursorAlone()
 	QTextCursor cursor = console.textCursor();
 	cursor.setPosition(console.document()->lastBlock().position() + 3);
 	console.setTextCursor(cursor);
-	const int position = console.textCursor().position();
+	const int32_t position = console.textCursor().position();
 
 	QCOMPARE(console.currentCommand(), QStringLiteral("abc"));
 
@@ -442,10 +444,10 @@ void tst_QSimpleConsole::historyIsCappedAtMaximum()
 	QSimpleConsole console;
 	console.show();
 	echoCommands(&console);
-	for (int i = 0; i < 40; ++i)
+	for (int32_t i = 0; i < 40; ++i)
 		enter(&console, QStringLiteral("c%1").arg(i));
 
-	for (int i = 0; i < 40; ++i)
+	for (int32_t i = 0; i < 40; ++i)
 		QTest::keyClick(&console, Qt::Key_Up);
 
 	// 32 entries retained: c39 back to c8.
@@ -583,7 +585,7 @@ void tst_QSimpleConsole::shiftBackspaceCannotDeletePrompt()
 	QSimpleConsole console;
 	console.show();
 
-	for (int i = 0; i < 4; ++i)
+	for (int32_t i = 0; i < 4; ++i)
 		QTest::keyClick(&console, Qt::Key_Backspace, Qt::ShiftModifier);
 
 	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
