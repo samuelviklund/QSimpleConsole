@@ -43,31 +43,35 @@ private slots:
 	void scrollbackIsUnlimitedByDefault();
 	void scrollbackLinesCapsHistory();
 	void scrollbackCapPreservesPendingInput();
+	void clearRedrawsThePrompt();
+	void clearLeavesTheConsoleUsable();
+	void clearKeepsHistory();
+	void clearHistoryDropsRecordedCommands();
 
 	// -- characterization: history ---------------------------------------
 	void upDownNavigatesHistory();
 	void historyIsCappedAtMaximum();
 
 	// -- regression guards: were failing, now fixed ------------------------
-	void mouseSelectAllThenTypeKeepsPrompt();            // F01
-	void typingInsideOutputAppendsToInput();             // F01
-	void commandStillEmittedAfterMouseSelectAll();       // F01
-	void setPromptRedrawsPrompt();                       // F02
-	void setPromptPreservesPendingCommand();             // F02
-	void handlerMayPrefillNextCommand();                 // F03
-	void multiLineCommandUsesNewlines();                 // F04
-	void shiftReturnDoesNotInsertRawNewline();           // F05
-	void shiftBackspaceCannotDeletePrompt();             // F05
-	void shiftHomeThenTypeKeepsPrompt();                 // F05
-	void shiftInsertRespectsPromptBoundary();            // F06
-	void asyncOutputPreservesWrappedInput();             // F07
-	void silentHandlerPreservesPendingInput();           // F08
-	void ctrlBackspaceCannotDeleteAlphanumericPrompt();  // F09
-	void cutWithoutSelectionKeepsClipboard();            // F10
-	void pastedNewlinesStayOnOneLine();                  // F11
-	void droppedTextLandsInInput();                      // F12
-	void historyRestoresDraftLine();                     // F21
-	void historySkipsConsecutiveDuplicates();            // F21
+	void mouseSelectAllThenTypeKeepsPrompt();           // F01
+	void typingInsideOutputAppendsToInput();            // F01
+	void commandStillEmittedAfterMouseSelectAll();      // F01
+	void setPromptRedrawsPrompt();                      // F02
+	void setPromptPreservesPendingCommand();            // F02
+	void handlerMayPrefillNextCommand();                // F03
+	void multiLineCommandUsesNewlines();                // F04
+	void shiftReturnDoesNotInsertRawNewline();          // F05
+	void shiftBackspaceCannotDeletePrompt();            // F05
+	void shiftHomeThenTypeKeepsPrompt();                // F05
+	void shiftInsertRespectsPromptBoundary();           // F06
+	void asyncOutputPreservesWrappedInput();            // F07
+	void silentHandlerPreservesPendingInput();          // F08
+	void ctrlBackspaceCannotDeleteAlphanumericPrompt(); // F09
+	void cutWithoutSelectionKeepsClipboard();           // F10
+	void pastedNewlinesStayOnOneLine();                 // F11
+	void droppedTextLandsInInput();                     // F12
+	void historyRestoresDraftLine();                    // F21
+	void historySkipsConsecutiveDuplicates();           // F21
 };
 
 namespace {
@@ -76,8 +80,8 @@ namespace {
  * what most consumers will do. */
 void echoCommands(QSimpleConsole *console)
 {
-	QObject::connect(console, &QSimpleConsole::commandEntered,
-	                 console, &QSimpleConsole::appendOutput);
+	QObject::connect(console, &QSimpleConsole::commandEntered, console,
+	                 &QSimpleConsole::appendOutput);
 }
 
 void enter(QSimpleConsole *console, const QString &command)
@@ -141,7 +145,7 @@ void tst_QSimpleConsole::homeMovesToInputStart()
 
 	QTest::keyClick(&console, Qt::Key_Home);
 
-	QCOMPARE(console.textCursor().position(), 2);   // just past "> "
+	QCOMPARE(console.textCursor().position(), 2); // just past "> "
 }
 
 void tst_QSimpleConsole::backspaceCannotDeletePrompt()
@@ -323,6 +327,64 @@ void tst_QSimpleConsole::scrollbackCapPreservesPendingInput()
 	QCOMPARE(console.getCommand(), QStringLiteral("typing"));
 }
 
+void tst_QSimpleConsole::clearRedrawsThePrompt()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "hello");
+	QTest::keyClicks(&console, "half typed");
+
+	console.clear();
+
+	QCOMPARE(console.toPlainText(), QStringLiteral("> "));
+	QCOMPARE(console.getCommand(), QString());
+}
+
+void tst_QSimpleConsole::clearLeavesTheConsoleUsable()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "hello");
+	console.clear();
+
+	QSignalSpy spy(&console, &QSimpleConsole::commandEntered);
+	enter(&console, "after");
+
+	QCOMPARE(spy.count(), 1);
+	QCOMPARE(spy.at(0).at(0).toString(), QStringLiteral("after"));
+	QCOMPARE(console.toPlainText(), QStringLiteral("> after\nafter\n> "));
+}
+
+void tst_QSimpleConsole::clearKeepsHistory()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "remembered");
+
+	console.clear();
+	QTest::keyClick(&console, Qt::Key_Up);
+
+	QCOMPARE(console.getCommand(), QStringLiteral("remembered"));
+}
+
+void tst_QSimpleConsole::clearHistoryDropsRecordedCommands()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "secret");
+	QTest::keyClicks(&console, "draft");
+
+	console.clearHistory();
+	QTest::keyClick(&console, Qt::Key_Up);
+
+	// nothing to recall, so Up leaves the line alone
+	QCOMPARE(console.getCommand(), QStringLiteral("draft"));
+}
+
 void tst_QSimpleConsole::upDownNavigatesHistory()
 {
 	QSimpleConsole console;
@@ -384,7 +446,7 @@ void tst_QSimpleConsole::typingInsideOutputAppendsToInput()
 	const QString before = console.toPlainText();
 
 	QTextCursor cursor = console.textCursor();
-	cursor.setPosition(1);              // inside the first prompt
+	cursor.setPosition(1); // inside the first prompt
 	console.setTextCursor(cursor);
 	QTest::keyClicks(&console, "XYZ");
 
@@ -511,7 +573,7 @@ void tst_QSimpleConsole::shiftInsertRespectsPromptBoundary()
 	enter(&console, "hello");
 	QApplication::clipboard()->setText("PASTED");
 	QTextCursor cursor = console.textCursor();
-	cursor.setPosition(1);              // inside the scrollback
+	cursor.setPosition(1); // inside the scrollback
 	console.setTextCursor(cursor);
 
 	QTest::keyClick(&console, Qt::Key_Insert, Qt::ShiftModifier);
@@ -523,7 +585,7 @@ void tst_QSimpleConsole::shiftInsertRespectsPromptBoundary()
 void tst_QSimpleConsole::asyncOutputPreservesWrappedInput()
 {
 	QSimpleConsole console;
-	console.resize(120, 200);           // narrow enough to wrap the input line
+	console.resize(120, 200); // narrow enough to wrap the input line
 	console.show();
 	QTest::keyClicks(&console, "aaaa bbbb cccc dddd eeee ffff gggg hhhh");
 
@@ -553,7 +615,7 @@ void tst_QSimpleConsole::ctrlBackspaceCannotDeleteAlphanumericPrompt()
 	QSimpleConsole console;
 	console.show();
 	console.setPrompt("abc");
-	console.appendOutput("banner");     // draws the new prompt (see F02)
+	console.appendOutput("banner"); // draws the new prompt (see F02)
 	QTest::keyClicks(&console, "foo");
 
 	QTest::keyClick(&console, Qt::Key_Backspace, Qt::ControlModifier);
@@ -596,7 +658,7 @@ void tst_QSimpleConsole::droppedTextLandsInInput()
 	const QString before = console.toPlainText();
 
 	QTextCursor cursor = console.textCursor();
-	cursor.setPosition(1);              // where a drop into the scrollback lands
+	cursor.setPosition(1); // where a drop into the scrollback lands
 	console.setTextCursor(cursor);
 
 	QMimeData mime;

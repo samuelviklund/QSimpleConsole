@@ -19,6 +19,9 @@ the root cause behind most of the fixes below.
 - `setScrollbackLines()` / `scrollbackLines()` cap the output kept above the
   input line. Unlimited remains the default; note that capping the scrollback
   disables undo/redo.
+- `clear()` empties the console and draws a fresh prompt, and `clearHistory()`
+  drops the recorded commands. Note that `clear()` hides `QPlainTextEdit`'s
+  non-virtual slot of the same name rather than overriding it.
 - Qt Test suite covering the prompt boundary, output rendering and history.
   Build it with `-DQSIMPLECONSOLE_BUILD_TESTS=ON` and run it through CTest; it
   needs no display server.

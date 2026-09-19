@@ -46,7 +46,8 @@ int QSimpleConsole::inputStart() const
 	// The prompt opens the last block. Multi-line input leaves the blocks after
 	// the first without one, so fall back to the most recent block that carries
 	// it rather than pointing past the end of the document.
-	for (QTextBlock block = document()->lastBlock(); block.isValid(); block = block.previous()) {
+	for (QTextBlock block = document()->lastBlock(); block.isValid();
+	     block = block.previous()) {
 		if (block.text().startsWith(prompt))
 			return block.position() + prompt.length();
 	}
@@ -294,9 +295,9 @@ void QSimpleConsole::handleHomeKey(QKeyEvent *event)
 	event->accept();
 
 	QTextCursor cursor = textCursor();
-	cursor.setPosition(inputStart(), event->modifiers() & Qt::ShiftModifier
-	                                    ? QTextCursor::KeepAnchor
-	                                    : QTextCursor::MoveAnchor);
+	cursor.setPosition(inputStart(), event->modifiers() & Qt::ShiftModifier ?
+	                                         QTextCursor::KeepAnchor :
+	                                         QTextCursor::MoveAnchor);
 
 	setTextCursor(cursor);
 }
@@ -348,6 +349,23 @@ void QSimpleConsole::appendOutput(const QString &output)
 	handlingSubmittedCommand = false;
 
 	setTextCursor(cursor);
+}
+
+void QSimpleConsole::clear()
+{
+	QPlainTextEdit::clear();
+
+	QTextCursor cursor = textCursor();
+	cursor.insertText(prompt);
+
+	setTextCursor(cursor);
+}
+
+void QSimpleConsole::clearHistory()
+{
+	history.clear();
+	historyDraft.clear();
+	historyIndex = -1;
 }
 
 void QSimpleConsole::keyPressEvent(QKeyEvent *event)
@@ -404,11 +422,11 @@ void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 	std::unique_ptr<QMenu> menu(createStandardContextMenu());
 	QAction *action;
 
-	if ((action = menu->findChild<QAction*>("edit-cut")))
+	if ((action = menu->findChild<QAction *>("edit-cut")))
 		action->setEnabled(canCut());
-	if ((action = menu->findChild<QAction*>("edit-delete")))
+	if ((action = menu->findChild<QAction *>("edit-delete")))
 		action->setEnabled(canCut());
-	if ((action = menu->findChild<QAction*>("edit-paste")))
+	if ((action = menu->findChild<QAction *>("edit-paste")))
 		action->setEnabled(canPaste());
 
 	menu->exec(event->globalPos());

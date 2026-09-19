@@ -8,12 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	connect(console, &QSimpleConsole::commandEntered, console, &QSimpleConsole::appendOutput);
 
-
 	setCentralWidget(console);
 }
 
-MainWindow::~MainWindow()
-{
-
-}
-
+MainWindow::~MainWindow() {}

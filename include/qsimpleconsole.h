@@ -30,6 +30,13 @@ public:
 public slots:
 	void appendOutput(const QString &output);
 
+	// Empties the console and draws a fresh prompt. This hides, rather than
+	// overrides, QPlainTextEdit's non-virtual clear() slot: reaching the widget
+	// through a QPlainTextEdit pointer clears the prompt along with everything
+	// else. History is kept; clearHistory() drops that separately.
+	void clear();
+	void clearHistory();
+
 signals:
 	void commandEntered(const QString &command);
 

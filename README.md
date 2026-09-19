@@ -55,6 +55,8 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | `getCommand()` | The text currently typed after the prompt. |
 | `setCurrentCommand(const QString &)` | Replaces the text after the prompt, as history navigation does. |
 | `setTimestamp(bool)` | Prefixes each output line with `hh:mm:ss: `. Off by default. |
+| `clear()` *(slot)* | Empties the console and draws a fresh prompt. Keeps the history. |
+| `clearHistory()` *(slot)* | Drops the recorded commands, so `Up` has nothing to recall. |
 | `setScrollbackLines(int)`, `scrollbackLines()` | Caps the output lines kept above the input. 0 keeps every line, and is the default. |
 | `canCut()`, `canPaste()` | Whether cut and paste are currently possible. Used for the context menu. |
 
@@ -83,6 +85,12 @@ signal/slot connection rather than calling it directly.
 **Commands are untrusted input.** `commandEntered` forwards whatever was typed
 or pasted, unchanged. Validate it before handing it to a shell, an interpreter
 or a query engine.
+
+**Entered commands stay in memory.** Every command joins the history and stays
+in the document. `clearHistory()` drops the recorded commands and `clear()`
+empties the display, but neither overwrites the memory that held them - if the
+console is used to enter secrets, treat this as best-effort removal rather than
+a secure erase.
 
 **Scrollback is unlimited by default.** Every line of output is kept for the
 lifetime of the widget, and Qt holds a laid-out representation of each one -
