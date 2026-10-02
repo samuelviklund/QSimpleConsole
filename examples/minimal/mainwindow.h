@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 
-#include "../../include/qsimpleconsole.h"
+#include "qsimpleconsole.h"
 
 class MainWindow : public QMainWindow
 {
