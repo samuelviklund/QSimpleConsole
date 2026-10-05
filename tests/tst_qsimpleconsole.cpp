@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTextBlock>
 
 #include "qsimpleconsole.h"
@@ -51,6 +52,10 @@ private slots:
 	void clearHistoryDropsRecordedCommands();
 	void currentCommandLeavesTheCursorAlone();
 	void propertiesReachTheMetaObject();
+
+	// -- characterization: saving ----------------------------------------
+	void saveToFileWritesTheDocument();
+	void saveToFileReportsFailure();
 
 	// -- characterization: history ---------------------------------------
 	void upDownNavigatesHistory();
@@ -282,6 +287,47 @@ void tst_QSimpleConsole::maximumBlockCountDoesNotBreakBoundary()
 	QTest::keyClicks(&console, "next");
 
 	QCOMPARE(console.currentCommand(), QStringLiteral("next"));
+}
+
+// ---------------------------------------------------------------------------
+// characterization: saving
+// ---------------------------------------------------------------------------
+
+void tst_QSimpleConsole::saveToFileWritesTheDocument()
+{
+	QSimpleConsole console;
+	echoCommands(&console);
+	enter(&console, "first");
+	enter(&console, "second");
+	QTest::keyClicks(&console, "half typed");
+
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("console.txt");
+
+	QSignalSpy errors(&console, &QSimpleConsole::saveError);
+	QVERIFY(console.saveToFile(path));
+	QCOMPARE(errors.count(), 0);
+
+	QFile file(path);
+	QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+
+	// The file carries the console verbatim, pending input and all, with one
+	// closing newline that the document itself does not have.
+	QCOMPARE(QString::fromUtf8(file.readAll()), console.toPlainText() + "\n");
+}
+
+void tst_QSimpleConsole::saveToFileReportsFailure()
+{
+	QSimpleConsole console;
+
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+
+	QSignalSpy errors(&console, &QSimpleConsole::saveError);
+	QVERIFY(!console.saveToFile(dir.filePath("no/such/directory/console.txt")));
+	QCOMPARE(errors.count(), 1);
+	QVERIFY(!errors.at(0).at(0).toString().isEmpty());
 }
 
 // ---------------------------------------------------------------------------

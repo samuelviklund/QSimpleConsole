@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- A **Clear** entry in the context menu, which calls `clear()`. The slot has
+  been there since 1.1.0 with no way for the user to reach it.
+- `saveToFile()` writes the console verbatim to a file, with a closing newline.
+  A failed write returns `false` and emits the new `saveError()` signal; the
+  widget shows nothing itself, so the reporting is the consumer's to decide.
+- A **Save As...** entry in the context menu, which asks for a path and calls
+  `saveToFile()`.
+
 ## [1.2.0] - 2026-09-19
 
 ### Added

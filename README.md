@@ -66,6 +66,7 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | Member | Description |
 | --- | --- |
 | `commandEntered(const QString &)` *(signal)* | Emitted when Return is pressed on a non-empty input line. |
+| `saveError(const QString &)` *(signal)* | Emitted when `saveToFile()` could not write. Carries the reason. |
 | `appendOutput(const QString &)` *(slot)* | Writes a line of output and reopens the prompt below it. |
 | `prompt()`, `setPrompt(const QString &)` | The prompt. Defaults to `"> "`. |
 | `currentCommand()` | The text currently typed after the prompt. Reading it changes nothing. |
@@ -75,6 +76,7 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | `clearHistory()` *(slot)* | Drops the recorded commands, so `Up` has nothing to recall. |
 | `setScrollbackLines(int)`, `scrollbackLines()` | Caps the output lines kept above the input. 0 keeps every line, and is the default. |
 | `canCut()`, `canPaste()` | Whether cut and paste are currently possible. Used for the context menu. |
+| `saveToFile(const QString &)` | Writes the console verbatim to a file. Returns `false` and emits `saveError` on failure. |
 
 `prompt`, `timestampEnabled` and `scrollbackLines` are also declared as
 `Q_PROPERTY`, so they are reachable from Designer, QML and `setProperty()`.
@@ -94,6 +96,11 @@ and the pending text is carried down to the new prompt.
 Everything above the prompt is read-only. Typing, pasting or dropping text
 while the cursor is in the scrollback inserts at the input line instead, and
 newlines in pasted text are folded into spaces so the input stays one line.
+
+The right-click menu carries the standard Cut, Copy and Paste entries, with cut
+and paste greyed out when they would reach outside the input line, plus
+**Save As...**, which asks for a path and calls `saveToFile()`, and **Clear**,
+which calls `clear()`.
 
 ## Notes
 

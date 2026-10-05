@@ -2,12 +2,15 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QFile>
+#include <QFileDialog>
 #include <QFontDatabase>
 #include <QMenu>
 #include <QMimeData>
 #include <QPalette>
 #include <QRegularExpression>
 #include <QTextBlock>
+#include <QTextStream>
 #include <QTime>
 
 #include <cstddef>
@@ -366,6 +369,39 @@ void QSimpleConsole::clearHistory()
 	historyIndex = -1;
 }
 
+bool QSimpleConsole::saveToFile(const QString &path)
+{
+	QFile file(path);
+
+	// Text mode so each line arrives with the platform's own ending.
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+		emit saveError(file.errorString());
+		return false;
+	}
+
+	QTextStream stream(&file);
+	stream << toPlainText() << '\n';
+	stream.flush();
+
+	// The destructor would flush but could not report a failure, and a short
+	// write on a full disk surfaces nowhere else.
+	if (stream.status() != QTextStream::Ok || !file.flush()) {
+		emit saveError(file.errorString());
+		return false;
+	}
+
+	return true;
+}
+
+void QSimpleConsole::saveAs()
+{
+	const QString path = QFileDialog::getSaveFileName(this, tr("Save Console"),
+	                                                  QStringLiteral("console.txt"),
+	                                                  tr("Text files (*.txt);;All files (*)"));
+	if (!path.isEmpty())
+		saveToFile(path);
+}
+
 void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 {
 	if (event->matches(QKeySequence::Cut)) {
@@ -427,7 +463,19 @@ void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 	if ((action = menu->findChild<QAction *>("edit-paste")))
 		action->setEnabled(canPaste());
 
-	menu->exec(event->globalPos());
+	menu->addSeparator();
+	QAction *saveAction = menu->addAction(tr("Save As..."));
+	QAction *clearAction = menu->addAction(tr("Clear"));
+
+	// Dispatching on the return value rather than connecting the actions keeps
+	// the file dialog out of the menu's own event loop, where it would open
+	// while the popup still holds the mouse grab.
+	const QAction *chosen = menu->exec(event->globalPos());
+
+	if (chosen == saveAction)
+		saveAs();
+	else if (chosen == clearAction)
+		clear();
 }
 
 /* Every insertion the user can make - Ctrl+V, Shift+Insert, middle-click,

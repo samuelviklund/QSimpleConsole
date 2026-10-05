@@ -36,6 +36,10 @@ public:
 	bool canCut() const;
 	bool canPaste() const;
 
+	// Writes the console exactly as shown, plus a closing newline. Returns
+	// false and emits saveError() if the file could not be written.
+	bool saveToFile(const QString &path);
+
 	// Deprecated in 1.2.0, to be removed in 2.0.0.
 	[[deprecated("use currentCommand()")]] QString getCommand() const
 	{
@@ -58,6 +62,7 @@ public slots:
 
 signals:
 	void commandEntered(const QString &command);
+	void saveError(const QString &message);
 
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
@@ -80,6 +85,8 @@ private:
 	void handleDeleteKey(QKeyEvent *event);
 	void handleBackspaceKey(QKeyEvent *event);
 	void handleHomeKey(QKeyEvent *event);
+
+	void saveAs();
 
 	void addToHistory(const QString &command);
 
