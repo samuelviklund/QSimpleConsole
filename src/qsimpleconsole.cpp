@@ -299,12 +299,39 @@ void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 
 void QSimpleConsole::handleHomeKey(QKeyEvent *event)
 {
+	// Ctrl+Home belongs to the scrollback - it is the only way to reach the top
+	// of the document from the keyboard. Plain Home means the start of the
+	// input, not the start of the visual line.
+	if (event->modifiers() & Qt::ControlModifier) {
+		QPlainTextEdit::keyPressEvent(event);
+		return;
+	}
+
 	event->accept();
 
 	QTextCursor cursor = textCursor();
 	cursor.setPosition(inputStart(), event->modifiers() & Qt::ShiftModifier ?
 	                                         QTextCursor::KeepAnchor :
 	                                         QTextCursor::MoveAnchor);
+
+	setTextCursor(cursor);
+}
+
+void QSimpleConsole::handleEndKey(QKeyEvent *event)
+{
+	if (event->modifiers() & Qt::ControlModifier) {
+		QPlainTextEdit::keyPressEvent(event);
+		return;
+	}
+
+	event->accept();
+
+	// The counterpart to Home: the end of the input, across wraps, rather than
+	// the end of the visual line.
+	QTextCursor cursor = textCursor();
+	cursor.movePosition(QTextCursor::End, event->modifiers() & Qt::ShiftModifier ?
+	                                              QTextCursor::KeepAnchor :
+	                                              QTextCursor::MoveAnchor);
 
 	setTextCursor(cursor);
 }
@@ -323,6 +350,16 @@ bool QSimpleConsole::canPaste() const
 
 void QSimpleConsole::appendOutput(const QString &output)
 {
+	// Process output arrives newline-terminated. The prompt goes on its own
+	// line below, so a terminator here would leave a blank line between every
+	// pair of output lines. Exactly one is removed: "a\n\n" keeps the blank
+	// line the caller asked for, and CRLF counts as one terminator.
+	QString text = output;
+	if (text.endsWith(QStringLiteral("\r\n")))
+		text.chop(2);
+	else if (text.endsWith('\n') || text.endsWith('\r'))
+		text.chop(1);
+
 	QTextCursor cursor = textCursor();
 	cursor.movePosition(QTextCursor::End);
 
@@ -339,7 +376,7 @@ void QSimpleConsole::appendOutput(const QString &output)
 		cursor.insertText(QTime::currentTime().toString("hh:mm:ss") + ": ");
 	}
 
-	cursor.insertText(output);
+	cursor.insertText(text);
 	cursor.insertText("\n");
 	cursor.insertText(promptText);
 
@@ -437,6 +474,9 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 		return;
 	case Qt::Key_Home:
 		handleHomeKey(event);
+		return;
+	case Qt::Key_End:
+		handleEndKey(event);
 		return;
 	default:
 		break;

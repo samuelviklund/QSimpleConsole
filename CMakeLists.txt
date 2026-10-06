@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(QSimpleConsole VERSION 1.3.0 LANGUAGES CXX)
+project(QSimpleConsole VERSION 1.3.1 LANGUAGES CXX)
 
 # Qt setup. AUTOUIC and AUTORCC are omitted: there are no .ui or .qrc files.
 set(CMAKE_AUTOMOC ON)

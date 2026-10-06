@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-10-06
+
+### Fixed
+
+- `appendOutput()` strips one trailing line terminator, so output that arrives
+  newline-terminated - as everything read from a `QProcess` does - no longer
+  leaves a blank line between every pair of lines. Exactly one terminator is
+  removed, and CRLF counts as one, so a caller that asks for a blank line still
+  gets it.
+- `Ctrl+Home` reaches the top of the scrollback. Every `Home` variant used to
+  land at the start of the input, which left no way to get there from the
+  keyboard. `Ctrl+Shift+Home` selects to the start of the document.
+- `End` moves to the end of the input rather than the end of the visual line,
+  matching `Home`. On a wrapped input line the two used to disagree about where
+  the line ended. `Ctrl+End` still goes to the end of the document.
+
 ## [1.3.0] - 2026-10-05
 
 ### Added

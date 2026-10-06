@@ -85,6 +85,7 @@ private:
 	void handleDeleteKey(QKeyEvent *event);
 	void handleBackspaceKey(QKeyEvent *event);
 	void handleHomeKey(QKeyEvent *event);
+	void handleEndKey(QKeyEvent *event);
 
 	void saveAs();
 

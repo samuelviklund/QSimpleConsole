@@ -38,6 +38,18 @@ private slots:
 	void ctrlLeftCannotCrossPromptBoundary();
 	void selectAllSelectsOnlyTheCommand();
 
+	// -- characterization: the output path -------------------------------
+	void appendOutputLineEndings_data();
+	void appendOutputLineEndings();
+
+	// -- characterization: Home and End ----------------------------------
+	void ctrlHomeMovesToDocumentStart();
+	void ctrlShiftHomeSelectsToDocumentStart();
+	void plainEndMovesToInputEnd();
+	void endCrossesAWrappedLine();
+	void shiftEndSelectsToInputEnd();
+	void ctrlEndMovesToDocumentEnd();
+
 	// -- characterization: output ----------------------------------------
 	void asyncOutputPreservesPendingInput();
 	void twoOutputsForOneCommandRenderCleanly();
@@ -228,6 +240,131 @@ void tst_QSimpleConsole::selectAllSelectsOnlyTheCommand()
 	QTest::keyClick(&console, Qt::Key_A, Qt::ControlModifier);
 
 	QCOMPARE(console.textCursor().selectedText(), QStringLiteral("abc"));
+}
+
+// ---------------------------------------------------------------------------
+// characterization: the output path
+// ---------------------------------------------------------------------------
+
+/* appendOutput takes whatever a producer hands it. A terminator is stripped so
+ * the prompt below does not leave a blank line, but only one, so a caller that
+ * asked for a blank line still gets it. */
+void tst_QSimpleConsole::appendOutputLineEndings_data()
+{
+	QTest::addColumn<QString>("output");
+	QTest::addColumn<QString>("expected");
+
+	QTest::newRow("plain") << "line" << "line\n> ";
+	QTest::newRow("lf") << "line\n" << "line\n> ";
+	QTest::newRow("crlf") << "line\r\n" << "line\n> ";
+	QTest::newRow("cr") << "line\r" << "line\n> ";
+	QTest::newRow("blank line kept") << "line\n\n" << "line\n\n> ";
+	QTest::newRow("embedded") << "a\nb" << "a\nb\n> ";
+	QTest::newRow("empty") << "" << "\n> ";
+	QTest::newRow("newline only") << "\n" << "\n> ";
+	QTest::newRow("whitespace") << "  " << "  \n> ";
+}
+
+void tst_QSimpleConsole::appendOutputLineEndings()
+{
+	QFETCH(QString, output);
+	QFETCH(QString, expected);
+
+	QSimpleConsole console;
+	console.show();
+	console.clear();
+
+	console.appendOutput(output);
+
+	QCOMPARE(console.toPlainText(), expected);
+}
+
+// ---------------------------------------------------------------------------
+// characterization: Home and End
+// ---------------------------------------------------------------------------
+
+void tst_QSimpleConsole::ctrlHomeMovesToDocumentStart()
+{
+	QSimpleConsole console;
+	console.show();
+	console.appendOutput("line one");
+	console.appendOutput("line two");
+
+	QTest::keyClick(&console, Qt::Key_Home, Qt::ControlModifier);
+
+	// Plain Home stops at the input; Ctrl+Home is the only keyboard route to
+	// the top of the scrollback.
+	QCOMPARE(console.textCursor().position(), 0);
+}
+
+void tst_QSimpleConsole::ctrlShiftHomeSelectsToDocumentStart()
+{
+	QSimpleConsole console;
+	console.show();
+	console.appendOutput("line one");
+	QTest::keyClicks(&console, "abc");
+
+	QTest::keyClick(&console, Qt::Key_Home, Qt::ControlModifier | Qt::ShiftModifier);
+
+	// Compared as an extent, not as text: selectedText() encodes the block
+	// break as U+2029, which is what currentCommand() exists to translate.
+	QCOMPARE(console.textCursor().selectionStart(), 0);
+	QCOMPARE(console.textCursor().selectionEnd(), console.document()->characterCount() - 1);
+}
+
+void tst_QSimpleConsole::plainEndMovesToInputEnd()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "abc");
+	const int32_t end = console.textCursor().position();
+
+	QTest::keyClick(&console, Qt::Key_Home);
+	QTest::keyClick(&console, Qt::Key_End);
+
+	QCOMPARE(console.textCursor().position(), end);
+}
+
+void tst_QSimpleConsole::endCrossesAWrappedLine()
+{
+	QSimpleConsole console;
+	console.setLineWrapMode(QPlainTextEdit::WidgetWidth);
+	console.resize(120, 200);
+	console.show();
+	QTest::keyClicks(&console, QString("word ").repeated(12).trimmed());
+	const int32_t end = console.textCursor().position();
+
+	QTest::keyClick(&console, Qt::Key_Home);
+	QTest::keyClick(&console, Qt::Key_End);
+
+	// Qt's own End stops at the wrap. Home spans the whole input, so End has to
+	// as well, or the pair disagrees about where the input line ends.
+	QCOMPARE(console.textCursor().position(), end);
+}
+
+void tst_QSimpleConsole::shiftEndSelectsToInputEnd()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "abc");
+	QTest::keyClick(&console, Qt::Key_Home);
+
+	QTest::keyClick(&console, Qt::Key_End, Qt::ShiftModifier);
+
+	QCOMPARE(console.textCursor().selectedText(), QStringLiteral("abc"));
+}
+
+void tst_QSimpleConsole::ctrlEndMovesToDocumentEnd()
+{
+	QSimpleConsole console;
+	console.show();
+	console.appendOutput("line one");
+	QTest::keyClicks(&console, "abc");
+	QTest::keyClick(&console, Qt::Key_Home, Qt::ControlModifier);
+
+	QTest::keyClick(&console, Qt::Key_End, Qt::ControlModifier);
+
+	QCOMPARE(console.textCursor().position(), console.document()->characterCount() - 1);
 }
 
 // ---------------------------------------------------------------------------

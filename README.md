@@ -90,7 +90,8 @@ and the pending text is carried down to the new prompt.
 | --- | --- |
 | Return | Submits the input line and emits `commandEntered`. |
 | Up, Down | Walk the last 32 commands. Up remembers the line you were typing; Down gives it back. |
-| Home | Moves to the start of the input, not the start of the line. |
+| Home, End | Move to the start and end of the input, not of the visual line. |
+| Ctrl+Home, Ctrl+End | Move to the top of the scrollback and the end of the input. |
 | Ctrl+A | Selects the command, not the whole document. |
 
 Everything above the prompt is read-only. Typing, pasting or dropping text
