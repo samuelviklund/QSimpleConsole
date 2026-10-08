@@ -1,3 +1,8 @@
 # Local code-review artifacts, not part of the library
 CODE_REVIEW.md
 FINDINGS.html
+
+# Build trees
+build/
+build-*/
+cmake-build-*/

@@ -32,7 +32,7 @@ cmake --install build
 ```
 
 ```cmake
-find_package(QSimpleConsole 1.1 REQUIRED)
+find_package(QSimpleConsole 1.3 REQUIRED)
 
 target_link_libraries(myapp PRIVATE QSimpleConsole::qsimpleconsole)
 ```

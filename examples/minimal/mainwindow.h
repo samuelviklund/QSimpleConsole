@@ -3,17 +3,11 @@
 
 #include <QMainWindow>
 
-#include "qsimpleconsole.h"
-
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 
 public:
-	MainWindow(QWidget *parent = nullptr);
-	~MainWindow();
-
-private:
-	QSimpleConsole *console;
+	explicit MainWindow(QWidget *parent = nullptr);
 };
 #endif // MAINWINDOW_H

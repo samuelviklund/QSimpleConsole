@@ -7,7 +7,6 @@
 #include <QFontDatabase>
 #include <QMenu>
 #include <QMimeData>
-#include <QPalette>
 #include <QRegularExpression>
 #include <QTextBlock>
 #include <QTextStream>
