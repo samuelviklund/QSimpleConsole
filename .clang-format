@@ -1,5 +1,6 @@
-# Based on the Linux kernel style (via ~/src/libcarlinkit), which matches this
-# project's tabs and brace placement. Deviations from that base:
+# Based on the Linux kernel style, which matches this project's tabs and brace
+# placement, reached by overriding LLVM below rather than by a BasedOnStyle of
+# its own. Deviations from the kernel style:
 #   AfterClass            class brace on its own line
 #   AccessModifierOffset  public:/private: at column 0
 #   ColumnLimit 100       the sources already sit just under this
