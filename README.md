@@ -32,7 +32,7 @@ cmake --install build
 ```
 
 ```cmake
-find_package(QSimpleConsole 1.3 REQUIRED)
+find_package(QSimpleConsole 1.4 REQUIRED)
 
 target_link_libraries(myapp PRIVATE QSimpleConsole::qsimpleconsole)
 ```
@@ -67,6 +67,8 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | --- | --- |
 | `commandEntered(const QString &)` *(signal)* | Emitted when Return is pressed on a non-empty input line. |
 | `saveError(const QString &)` *(signal)* | Emitted when `saveToFile()` could not write. Carries the reason. |
+| `interruptRequested()` *(signal)* | Emitted on `Ctrl+C` with nothing selected. Stopping the work is yours to do. |
+| `completionRequested(const QString &)` *(signal)* | Emitted on `Tab`, carrying the input so far. Answer with `setCurrentCommand()`. |
 | `appendOutput(const QString &)` *(slot)* | Writes a line of output and reopens the prompt below it. |
 | `prompt()`, `setPrompt(const QString &)` | The prompt. Defaults to `"> "`. |
 | `currentCommand()` | The text currently typed after the prompt. Reading it changes nothing. |
@@ -74,12 +76,15 @@ A complete program is in [`examples/minimal`](examples/minimal).
 | `setTimestampEnabled(bool)`, `isTimestampEnabled()` | Prefixes each output line with `hh:mm:ss: `. Off by default. |
 | `clear()` *(slot)* | Empties the console and draws a fresh prompt. Keeps the history. |
 | `clearHistory()` *(slot)* | Drops the recorded commands, so `Up` has nothing to recall. |
+| `history()`, `setHistory(const QStringList &)` | The recorded commands, newest first. Save them and restore them across runs. |
+| `maximumHistorySize()`, `setMaximumHistorySize(uint32_t)` | Caps the commands kept for `Up` and `Down`. 32 by default; 0 disables the history. |
 | `setScrollbackLines(int)`, `scrollbackLines()` | Caps the output lines kept above the input. 0 keeps every line, and is the default. |
 | `canCut()`, `canPaste()` | Whether cut and paste are currently possible. Used for the context menu. |
 | `saveToFile(const QString &)` | Writes the console verbatim to a file. Returns `false` and emits `saveError` on failure. |
 
-`prompt`, `timestampEnabled` and `scrollbackLines` are also declared as
-`Q_PROPERTY`, so they are reachable from Designer, QML and `setProperty()`.
+`prompt`, `timestampEnabled`, `scrollbackLines`, `history` and
+`maximumHistorySize` are also declared as `Q_PROPERTY`, so they are reachable
+from Designer, QML and `setProperty()`.
 
 Output that arrives while a command is half-typed is written above the input,
 and the pending text is carried down to the new prompt.
@@ -89,10 +94,12 @@ and the pending text is carried down to the new prompt.
 | Key | Behaviour |
 | --- | --- |
 | Return | Submits the input line and emits `commandEntered`. |
-| Up, Down | Walk the last 32 commands. Up remembers the line you were typing; Down gives it back. |
+| Up, Down | Walk the recorded commands. Up remembers the line you were typing; Down gives it back. |
 | Home, End | Move to the start and end of the input, not of the visual line. |
 | Ctrl+Home, Ctrl+End | Move to the top of the scrollback and the end of the input. |
 | Ctrl+A | Selects the command, not the whole document. |
+| Tab | Emits `completionRequested`. Inserts nothing on its own. |
+| Ctrl+C | Copies the selection, or emits `interruptRequested` when there is none. |
 
 Everything above the prompt is read-only. Typing, pasting or dropping text
 while the cursor is in the scrollback inserts at the input line instead, and

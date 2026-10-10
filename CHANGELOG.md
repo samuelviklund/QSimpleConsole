@@ -5,6 +5,39 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-10-10
+
+### Added
+
+- `history()` and `setHistory()` read and replace the recorded commands, so an
+  application can save the history and restore it on the next run. The list is
+  newest first, which is the order `Up` walks.
+- `maximumHistorySize()` and `setMaximumHistorySize()` cap how many commands
+  are kept. The cap was fixed at 32 and private. Lowering it drops the oldest
+  at once, and a value of 0 disables the history.
+- `interruptRequested()` is emitted when `Ctrl+C` is pressed with nothing
+  selected. The widget keeps no notion of a running command, so it reports the
+  request and nothing more; with a selection, `Ctrl+C` is still Copy.
+- `completionRequested()` is emitted on `Tab`, carrying the input typed so far.
+  Answer it with `setCurrentCommand()`.
+- `history` and `maximumHistorySize` are declared as `Q_PROPERTY`, joining the
+  three existing properties.
+
+### Changed
+
+- Every line of a multi-line `appendOutput()` carries the timestamp. Only the
+  first line used to, so the rest read as continuations of a line that had
+  never been stamped. Blank lines stay bare. **This changes the output of any
+  caller that passes embedded newlines with timestamps enabled.**
+- `Tab` no longer inserts a literal tab character into the command. With
+  nothing connected to `completionRequested()` it now does nothing. `Ctrl+Tab`
+  is left to the host application.
+
+### Removed
+
+- The history is stored in a `QStringList` rather than a `std::deque`, which
+  removes the `<deque>` and `<cstddef>` includes from the public header.
+
 ## [1.3.1] - 2026-10-06
 
 ### Fixed
