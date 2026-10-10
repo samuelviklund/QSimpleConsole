@@ -75,6 +75,14 @@ private slots:
 	void upDownNavigatesHistory();
 	void historyIsCappedAtMaximum();
 
+	// -- characterization: interrupt and completion ----------------------
+	void ctrlCWithoutSelectionRequestsInterrupt();
+	void ctrlCWithSelectionStillCopies();
+	void tabRequestsCompletion();
+	void tabInsertsNothingWhenUnconnected();
+	void ctrlTabIsLeftToTheHost();
+	void completionHandlerCanFillTheInput();
+
 	// -- characterization: the history API -------------------------------
 	void historyIsNewestFirst();
 	void setHistoryRoundTrips();
@@ -686,6 +694,95 @@ void tst_QSimpleConsole::historyIsCappedAtMaximum()
 
 	// 32 entries retained: c39 back to c8.
 	QCOMPARE(console.currentCommand(), QStringLiteral("c8"));
+}
+
+// ---------------------------------------------------------------------------
+// characterization: interrupt and completion
+// ---------------------------------------------------------------------------
+
+void tst_QSimpleConsole::ctrlCWithoutSelectionRequestsInterrupt()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "running");
+	QSignalSpy spy(&console, &QSimpleConsole::interruptRequested);
+
+	QTest::keyClick(&console, Qt::Key_C, Qt::ControlModifier);
+
+	QCOMPARE(spy.count(), 1);
+	// Reporting only: the input the user typed is left alone.
+	QCOMPARE(console.currentCommand(), QStringLiteral("running"));
+}
+
+void tst_QSimpleConsole::ctrlCWithSelectionStillCopies()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "copy me");
+	QTest::keyClick(&console, Qt::Key_Home, Qt::ShiftModifier);
+	QApplication::clipboard()->clear();
+	QSignalSpy spy(&console, &QSimpleConsole::interruptRequested);
+
+	QTest::keyClick(&console, Qt::Key_C, Qt::ControlModifier);
+
+	QCOMPARE(spy.count(), 0);
+	QCOMPARE(QApplication::clipboard()->text(), QStringLiteral("copy me"));
+}
+
+void tst_QSimpleConsole::tabRequestsCompletion()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "git che");
+	QSignalSpy spy(&console, &QSimpleConsole::completionRequested);
+
+	QTest::keyClick(&console, Qt::Key_Tab);
+
+	QCOMPARE(spy.count(), 1);
+	QCOMPARE(spy.at(0).at(0).toString(), QStringLiteral("git che"));
+}
+
+void tst_QSimpleConsole::tabInsertsNothingWhenUnconnected()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "ls");
+
+	QTest::keyClick(&console, Qt::Key_Tab);
+
+	// Tab used to insert a literal tab character into the command.
+	QCOMPARE(console.currentCommand(), QStringLiteral("ls"));
+}
+
+void tst_QSimpleConsole::ctrlTabIsLeftToTheHost()
+{
+	QSimpleConsole console;
+	console.show();
+	QTest::keyClicks(&console, "ls");
+	QSignalSpy spy(&console, &QSimpleConsole::completionRequested);
+
+	QTest::keyClick(&console, Qt::Key_Tab, Qt::ControlModifier);
+
+	// Host applications bind Ctrl+Tab to switching views; swallowing it here
+	// would take that away from anyone embedding the console.
+	QCOMPARE(spy.count(), 0);
+	QCOMPARE(console.currentCommand(), QStringLiteral("ls"));
+}
+
+void tst_QSimpleConsole::completionHandlerCanFillTheInput()
+{
+	QSimpleConsole console;
+	console.show();
+	connect(&console, &QSimpleConsole::completionRequested, &console,
+	        [&console](const QString &prefix) {
+		        if (QStringLiteral("git checkout").startsWith(prefix))
+			        console.setCurrentCommand(QStringLiteral("git checkout"));
+	        });
+	QTest::keyClicks(&console, "git che");
+
+	QTest::keyClick(&console, Qt::Key_Tab);
+
+	QCOMPARE(console.currentCommand(), QStringLiteral("git checkout"));
 }
 
 // ---------------------------------------------------------------------------

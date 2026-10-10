@@ -80,6 +80,15 @@ signals:
 	void commandEntered(const QString &command);
 	void saveError(const QString &message);
 
+	// Ctrl+C with nothing selected. The widget keeps no notion of a running
+	// command, so it only reports the request; stopping the work is the
+	// consumer's. With a selection, Ctrl+C stays Copy.
+	void interruptRequested();
+
+	// Tab, carrying the input typed so far. Answer it with
+	// setCurrentCommand(); unconnected, Tab does nothing.
+	void completionRequested(const QString &prefix);
+
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
 	void contextMenuEvent(QContextMenuEvent *event) override;

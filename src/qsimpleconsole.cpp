@@ -25,9 +25,6 @@ bool insertsText(const QKeyEvent *event)
 	if (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
 		return false;
 
-	if (event->key() == Qt::Key_Tab)
-		return true;
-
 	const QString text = event->text();
 
 	return !text.isEmpty() && text.at(0).isPrint();
@@ -485,6 +482,14 @@ void QSimpleConsole::saveAs()
 
 void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 {
+	// Before Cut, and before Qt's own Copy: a terminal reads Ctrl+C as an
+	// interrupt when there is nothing to copy.
+	if (event->matches(QKeySequence::Copy) && !textCursor().hasSelection()) {
+		event->accept();
+		emit interruptRequested();
+		return;
+	}
+
 	if (event->matches(QKeySequence::Cut)) {
 		handleCut(event);
 		return;
@@ -515,6 +520,16 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 		return;
 	case Qt::Key_Backspace:
 		handleBackspaceKey(event);
+		return;
+	case Qt::Key_Tab:
+		// A literal tab in a command line is no use to anyone. Hand the input
+		// to whoever can complete it instead - but only for a bare Tab, since
+		// Ctrl+Tab belongs to the host application, which commonly uses it to
+		// switch views.
+		if (event->modifiers() != Qt::NoModifier)
+			break;
+		event->accept();
+		emit completionRequested(currentCommand());
 		return;
 	case Qt::Key_Home:
 		handleHomeKey(event);
