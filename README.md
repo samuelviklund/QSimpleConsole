@@ -39,7 +39,7 @@ target_link_libraries(myapp PRIVATE QSimpleConsole::qsimpleconsole)
 
 The target name is the same either way, and it carries its own include
 directory, so `#include "qsimpleconsole.h"` works from anywhere in your
-project. You do not need to `find_package(Qt...)` yourself - the package
+project. You do not need to `find_package(Qt...)` yourself; the package
 config pulls in Qt Widgets, which the library exposes publicly.
 
 ## Usage
@@ -122,7 +122,7 @@ or a query engine.
 
 **Entered commands stay in memory.** Every command joins the history and stays
 in the document. `clearHistory()` drops the recorded commands and `clear()`
-empties the display, but neither overwrites the memory that held them - if the
+empties the display, but neither overwrites the memory that held them. If the
 console is used to enter secrets, treat this as best-effort removal rather than
 a secure erase.
 

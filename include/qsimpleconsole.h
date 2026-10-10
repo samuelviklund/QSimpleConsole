@@ -35,7 +35,7 @@ public:
 	void setScrollbackLines(int32_t lines);
 	int32_t scrollbackLines() const;
 
-	// The recorded commands, newest first - index 0 is what the first Up
+	// The recorded commands, newest first. Index 0 is what the first Up
 	// recalls.
 	QStringList history() const { return historyCommands; }
 

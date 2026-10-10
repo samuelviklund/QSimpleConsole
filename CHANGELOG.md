@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `appendOutput()` strips one trailing line terminator, so output that arrives
-  newline-terminated - as everything read from a `QProcess` does - no longer
+  newline-terminated (as everything read from a `QProcess` does) no longer
   leaves a blank line between every pair of lines. Exactly one terminator is
   removed, and CRLF counts as one, so a caller that asks for a blank line still
   gets it.
@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The console asks the platform for its fixed-width font instead of naming
-  "Source Code Pro". A missing family fell back to a proportional face - on a
+  "Source Code Pro". A missing family fell back to a proportional face; on a
   stock system the console was not monospaced at all. Call `setFont()` if you
   want a particular family.
 - The exported CMake target carries its C++17 requirement, so
@@ -130,8 +130,8 @@ the root cause behind most of the fixes below.
 - `setPrompt()` now redraws the prompt instead of leaving the old one in place
   until the next output, and no longer swallows text that had already been
   typed.
-- A slot connected to `commandEntered` can now change console state - writing
-  output, pre-filling the next command - without having its work overwritten
+- A slot connected to `commandEntered` can now change console state (writing
+  output, pre-filling the next command) without having its work overwritten
   when the signal returns.
 - Multi-line commands are delivered with `\n` separators. They previously
   carried the U+2029 paragraph separator that `QTextCursor::selectedText()`
@@ -165,8 +165,8 @@ the root cause behind most of the fixes below.
   delete the prompt, and `Shift+Home` selects back to the prompt rather than to
   the start of the line.
 - Keyboard shortcuts are matched with `QKeySequence` instead of exact modifier
-  comparisons, so each platform's alternative bindings - `Shift+Insert` for
-  paste, among others - are handled too.
+  comparisons, so each platform's alternative bindings (`Shift+Insert` for
+  paste, among others) are handled too.
 
 ## [1.0.0]
 

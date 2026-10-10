@@ -11,23 +11,12 @@
 
 #include "qsimpleconsole.h"
 
-/*
- * Two kinds of test live here.
- *
- *  - Regression guards: behaviour that was wrong and has been fixed. Each
- *    carries the finding id from FINDINGS.html. They were written first, as
- *    QEXPECT_FAIL, so that landing a fix turned the suite red until the
- *    marker came out - no fix was claimed without the evidence.
- *
- *  - Characterization: behaviour that was already correct and had to survive
- *    the prompt-boundary rework.
- */
 class tst_QSimpleConsole : public QObject
 {
 	Q_OBJECT
 
 private slots:
-	// -- characterization: the prompt boundary ---------------------------
+	// -- the prompt boundary ---------------------------------------------
 	void promptIsDrawnOnConstruction();
 	void typedTextIsEmittedAsCommand();
 	void emptyReturnDrawsNewPrompt();
@@ -38,11 +27,11 @@ private slots:
 	void ctrlLeftCannotCrossPromptBoundary();
 	void selectAllSelectsOnlyTheCommand();
 
-	// -- characterization: the output path -------------------------------
+	// -- the output path -------------------------------------------------
 	void appendOutputLineEndings_data();
 	void appendOutputLineEndings();
 
-	// -- characterization: Home and End ----------------------------------
+	// -- Home and End ----------------------------------------------------
 	void ctrlHomeMovesToDocumentStart();
 	void ctrlShiftHomeSelectsToDocumentStart();
 	void plainEndMovesToInputEnd();
@@ -50,7 +39,7 @@ private slots:
 	void shiftEndSelectsToInputEnd();
 	void ctrlEndMovesToDocumentEnd();
 
-	// -- characterization: output ----------------------------------------
+	// -- output ----------------------------------------------------------
 	void asyncOutputPreservesPendingInput();
 	void twoOutputsForOneCommandRenderCleanly();
 	void timestampPrefixesOutput();
@@ -67,15 +56,15 @@ private slots:
 	void currentCommandLeavesTheCursorAlone();
 	void propertiesReachTheMetaObject();
 
-	// -- characterization: saving ----------------------------------------
+	// -- saving ----------------------------------------------------------
 	void saveToFileWritesTheDocument();
 	void saveToFileReportsFailure();
 
-	// -- characterization: history ---------------------------------------
+	// -- history ---------------------------------------------------------
 	void upDownNavigatesHistory();
 	void historyIsCappedAtMaximum();
 
-	// -- characterization: interrupt and completion ----------------------
+	// -- interrupt and completion ----------------------------------------
 	void ctrlCWithoutSelectionRequestsInterrupt();
 	void ctrlCWithSelectionStillCopies();
 	void tabRequestsCompletion();
@@ -83,7 +72,7 @@ private slots:
 	void ctrlTabIsLeftToTheHost();
 	void completionHandlerCanFillTheInput();
 
-	// -- characterization: the history API -------------------------------
+	// -- the history API -------------------------------------------------
 	void historyIsNewestFirst();
 	void setHistoryRoundTrips();
 	void setHistoryTruncatesToTheMaximum();
@@ -92,26 +81,26 @@ private slots:
 	void loweringTheMaximumDropsTheOldest();
 	void maximumHistorySizeOfZeroDisablesHistory();
 
-	// -- regression guards: were failing, now fixed ------------------------
-	void mouseSelectAllThenTypeKeepsPrompt();           // F01
-	void typingInsideOutputAppendsToInput();            // F01
-	void commandStillEmittedAfterMouseSelectAll();      // F01
-	void setPromptRedrawsPrompt();                      // F02
-	void setPromptPreservesPendingCommand();            // F02
-	void handlerMayPrefillNextCommand();                // F03
-	void multiLineCommandUsesNewlines();                // F04
-	void shiftReturnDoesNotInsertRawNewline();          // F05
-	void shiftBackspaceCannotDeletePrompt();            // F05
-	void shiftHomeThenTypeKeepsPrompt();                // F05
-	void shiftInsertRespectsPromptBoundary();           // F06
-	void asyncOutputPreservesWrappedInput();            // F07
-	void silentHandlerPreservesPendingInput();          // F08
-	void ctrlBackspaceCannotDeleteAlphanumericPrompt(); // F09
-	void cutWithoutSelectionKeepsClipboard();           // F10
-	void pastedNewlinesStayOnOneLine();                 // F11
-	void droppedTextLandsInInput();                     // F12
-	void historyRestoresDraftLine();                    // F21
-	void historySkipsConsecutiveDuplicates();           // F21
+	// -- regression guards -----------------------------------------------
+	void mouseSelectAllThenTypeKeepsPrompt();
+	void typingInsideOutputAppendsToInput();
+	void commandStillEmittedAfterMouseSelectAll();
+	void setPromptRedrawsPrompt();
+	void setPromptPreservesPendingCommand();
+	void handlerMayPrefillNextCommand();
+	void multiLineCommandUsesNewlines();
+	void shiftReturnDoesNotInsertRawNewline();
+	void shiftBackspaceCannotDeletePrompt();
+	void shiftHomeThenTypeKeepsPrompt();
+	void shiftInsertRespectsPromptBoundary();
+	void asyncOutputPreservesWrappedInput();
+	void silentHandlerPreservesPendingInput();
+	void ctrlBackspaceCannotDeleteAlphanumericPrompt();
+	void cutWithoutSelectionKeepsClipboard();
+	void pastedNewlinesStayOnOneLine();
+	void droppedTextLandsInInput();
+	void historyRestoresDraftLine();
+	void historySkipsConsecutiveDuplicates();
 };
 
 namespace {
@@ -141,7 +130,7 @@ public:
 } // namespace
 
 // ---------------------------------------------------------------------------
-// characterization: the prompt boundary
+// the prompt boundary
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::promptIsDrawnOnConstruction()
@@ -262,7 +251,7 @@ void tst_QSimpleConsole::selectAllSelectsOnlyTheCommand()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: the output path
+// the output path
 // ---------------------------------------------------------------------------
 
 /* appendOutput takes whatever a producer hands it. A terminator is stripped so
@@ -299,7 +288,7 @@ void tst_QSimpleConsole::appendOutputLineEndings()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: Home and End
+// Home and End
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::ctrlHomeMovesToDocumentStart()
@@ -387,7 +376,7 @@ void tst_QSimpleConsole::ctrlEndMovesToDocumentEnd()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: output
+// output
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::asyncOutputPreservesPendingInput()
@@ -480,7 +469,7 @@ void tst_QSimpleConsole::maximumBlockCountDoesNotBreakBoundary()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: saving
+// saving
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::saveToFileWritesTheDocument()
@@ -521,7 +510,7 @@ void tst_QSimpleConsole::saveToFileReportsFailure()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: history
+// history
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::scrollbackIsUnlimitedByDefault()
@@ -697,7 +686,7 @@ void tst_QSimpleConsole::historyIsCappedAtMaximum()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: interrupt and completion
+// interrupt and completion
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::ctrlCWithoutSelectionRequestsInterrupt()
@@ -786,7 +775,7 @@ void tst_QSimpleConsole::completionHandlerCanFillTheInput()
 }
 
 // ---------------------------------------------------------------------------
-// characterization: the history API
+// the history API
 // ---------------------------------------------------------------------------
 
 void tst_QSimpleConsole::historyIsNewestFirst()
@@ -1080,7 +1069,7 @@ void tst_QSimpleConsole::ctrlBackspaceCannotDeleteAlphanumericPrompt()
 	QSimpleConsole console;
 	console.show();
 	console.setPrompt("abc");
-	console.appendOutput("banner"); // draws the new prompt (see F02)
+	console.appendOutput("banner"); // draws the new prompt
 	QTest::keyClicks(&console, "foo");
 
 	QTest::keyClick(&console, Qt::Key_Backspace, Qt::ControlModifier);

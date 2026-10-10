@@ -300,7 +300,7 @@ void QSimpleConsole::handleBackspaceKey(QKeyEvent *event)
 
 void QSimpleConsole::handleHomeKey(QKeyEvent *event)
 {
-	// Ctrl+Home belongs to the scrollback - it is the only way to reach the top
+	// Ctrl+Home belongs to the scrollback; it is the only way to reach the top
 	// of the document from the keyboard. Plain Home means the start of the
 	// input, not the start of the visual line.
 	if (event->modifiers() & Qt::ControlModifier) {
@@ -400,7 +400,7 @@ void QSimpleConsole::appendOutput(const QString &output)
 
 	// Load-bearing, not bookkeeping. A handler that writes twice sends its
 	// second call down the branch above, which removes the prompt this call
-	// just wrote and puts the next output line in its place - that is what
+	// just wrote and puts the next output line in its place, which is what
 	// makes consecutive writes stack with no prompt wedged between them.
 	// twoOutputsForOneCommandRenderCleanly pins the result down.
 	handlingSubmittedCommand = false;
@@ -523,7 +523,7 @@ void QSimpleConsole::keyPressEvent(QKeyEvent *event)
 		return;
 	case Qt::Key_Tab:
 		// A literal tab in a command line is no use to anyone. Hand the input
-		// to whoever can complete it instead - but only for a bare Tab, since
+		// to whoever can complete it instead, but only for a bare Tab, since
 		// Ctrl+Tab belongs to the host application, which commonly uses it to
 		// switch views.
 		if (event->modifiers() != Qt::NoModifier)
@@ -577,9 +577,9 @@ void QSimpleConsole::contextMenuEvent(QContextMenuEvent *event)
 		clear();
 }
 
-/* Every insertion the user can make - Ctrl+V, Shift+Insert, middle-click,
- * drag and drop, the context menu - arrives here, so this is the one place
- * that has to keep text inside the input line. */
+/* Every insertion the user can make (Ctrl+V, Shift+Insert, middle-click, drag
+ * and drop, the context menu) arrives here, so this is the one place that has
+ * to keep text inside the input line. */
 void QSimpleConsole::insertFromMimeData(const QMimeData *source)
 {
 	QString text = source->text();

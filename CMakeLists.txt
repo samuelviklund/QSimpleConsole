@@ -5,19 +5,16 @@ project(QSimpleConsole VERSION 1.4.0 LANGUAGES CXX)
 # Qt setup. AUTOUIC and AUTORCC are omitted: there are no .ui or .qrc files.
 set(CMAKE_AUTOMOC ON)
 
-# Find Qt (supports both Qt5 and Qt6)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 include(GNUInstallDirs)
 
-# Define the static library
 add_library(qsimpleconsole STATIC
     src/qsimpleconsole.cpp
     include/qsimpleconsole.h
 )
 
-# Specify include directories
 target_include_directories(qsimpleconsole
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -30,26 +27,22 @@ add_library(QSimpleConsole::qsimpleconsole ALIAS qsimpleconsole)
 # PUBLIC so the requirement is exported and reaches find_package() consumers
 target_compile_features(qsimpleconsole PUBLIC cxx_std_17)
 
-# Link against Qt
 target_link_libraries(qsimpleconsole
     PUBLIC
         Qt${QT_VERSION_MAJOR}::Widgets
 )
 
-# Set library output properties
 set_target_properties(qsimpleconsole PROPERTIES
     OUTPUT_NAME "qsimpleconsole"
     DEBUG_POSTFIX "d"
 )
 
-# Optional: Set specific output directory
 set_target_properties(qsimpleconsole PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
     ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
 )
 
-# Installation
 install(TARGETS qsimpleconsole
     EXPORT QSimpleConsoleTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
