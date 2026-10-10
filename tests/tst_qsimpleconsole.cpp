@@ -73,6 +73,15 @@ private slots:
 	void upDownNavigatesHistory();
 	void historyIsCappedAtMaximum();
 
+	// -- characterization: the history API -------------------------------
+	void historyIsNewestFirst();
+	void setHistoryRoundTrips();
+	void setHistoryTruncatesToTheMaximum();
+	void setHistoryEndsAWalkInProgress();
+	void restoredHistoryWalksWithUpAndDown();
+	void loweringTheMaximumDropsTheOldest();
+	void maximumHistorySizeOfZeroDisablesHistory();
+
 	// -- regression guards: were failing, now fixed ------------------------
 	void mouseSelectAllThenTypeKeepsPrompt();           // F01
 	void typingInsideOutputAppendsToInput();            // F01
@@ -604,6 +613,12 @@ void tst_QSimpleConsole::propertiesReachTheMetaObject()
 
 	QVERIFY(console.setProperty("scrollbackLines", 100));
 	QCOMPARE(console.property("scrollbackLines").toInt(), 100);
+
+	QVERIFY(console.setProperty("maximumHistorySize", 8u));
+	QCOMPARE(console.property("maximumHistorySize").toUInt(), 8u);
+
+	QVERIFY(console.setProperty("history", QStringList({ "a", "b" })));
+	QCOMPARE(console.property("history").toStringList(), QStringList({ "a", "b" }));
 }
 
 void tst_QSimpleConsole::upDownNavigatesHistory()
@@ -635,6 +650,102 @@ void tst_QSimpleConsole::historyIsCappedAtMaximum()
 
 	// 32 entries retained: c39 back to c8.
 	QCOMPARE(console.currentCommand(), QStringLiteral("c8"));
+}
+
+// ---------------------------------------------------------------------------
+// characterization: the history API
+// ---------------------------------------------------------------------------
+
+void tst_QSimpleConsole::historyIsNewestFirst()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "first");
+	enter(&console, "second");
+
+	// Index 0 is what the first Up recalls.
+	QCOMPARE(console.history(), QStringList({ "second", "first" }));
+}
+
+void tst_QSimpleConsole::setHistoryRoundTrips()
+{
+	QSimpleConsole console;
+	console.show();
+	const QStringList saved = { "newest", "middle", "oldest" };
+
+	console.setHistory(saved);
+
+	QCOMPARE(console.history(), saved);
+}
+
+void tst_QSimpleConsole::setHistoryTruncatesToTheMaximum()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setMaximumHistorySize(2);
+
+	console.setHistory({ "a", "b", "c", "d" });
+
+	// The newest survive; the cap stays the authority on how much is kept.
+	QCOMPARE(console.history(), QStringList({ "a", "b" }));
+}
+
+void tst_QSimpleConsole::setHistoryEndsAWalkInProgress()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	enter(&console, "old");
+	QTest::keyClick(&console, Qt::Key_Up);
+	QCOMPARE(console.currentCommand(), QStringLiteral("old"));
+
+	console.setHistory({ "restored" });
+
+	// The walk is over, so the next Up starts from the newest entry of the new
+	// list rather than stepping past where it had reached in the old one.
+	QTest::keyClick(&console, Qt::Key_Up);
+	QCOMPARE(console.currentCommand(), QStringLiteral("restored"));
+}
+
+void tst_QSimpleConsole::restoredHistoryWalksWithUpAndDown()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setHistory({ "two", "one" });
+
+	QTest::keyClick(&console, Qt::Key_Up);
+	QCOMPARE(console.currentCommand(), QStringLiteral("two"));
+	QTest::keyClick(&console, Qt::Key_Up);
+	QCOMPARE(console.currentCommand(), QStringLiteral("one"));
+	QTest::keyClick(&console, Qt::Key_Down);
+	QCOMPARE(console.currentCommand(), QStringLiteral("two"));
+}
+
+void tst_QSimpleConsole::loweringTheMaximumDropsTheOldest()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setHistory({ "d", "c", "b", "a" });
+
+	console.setMaximumHistorySize(2);
+
+	// Takes effect at once, not on the next command entered.
+	QCOMPARE(console.history(), QStringList({ "d", "c" }));
+}
+
+void tst_QSimpleConsole::maximumHistorySizeOfZeroDisablesHistory()
+{
+	QSimpleConsole console;
+	console.show();
+	echoCommands(&console);
+	console.setMaximumHistorySize(0);
+
+	enter(&console, "vanishes");
+
+	QVERIFY(console.history().isEmpty());
+	QTest::keyClick(&console, Qt::Key_Up);
+	QVERIFY(console.currentCommand().isEmpty());
 }
 
 // ---------------------------------------------------------------------------

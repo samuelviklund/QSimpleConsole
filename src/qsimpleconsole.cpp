@@ -12,7 +12,6 @@
 #include <QTextStream>
 #include <QTime>
 
-#include <cstddef>
 #include <memory>
 
 namespace {
@@ -163,7 +162,8 @@ void QSimpleConsole::handleUpKey(QKeyEvent *event)
 {
 	event->accept();
 
-	if (history.empty() || historyIndex >= (int32_t) history.size() - 1)
+	if (historyCommands.isEmpty() ||
+	    historyIndex >= static_cast<int32_t>(historyCommands.size()) - 1)
 		return;
 
 	if (historyIndex < 0)
@@ -171,7 +171,7 @@ void QSimpleConsole::handleUpKey(QKeyEvent *event)
 
 	historyIndex++;
 
-	setCurrentCommand(history.at(static_cast<std::size_t>(historyIndex)));
+	setCurrentCommand(historyCommands.at(historyIndex));
 }
 
 void QSimpleConsole::handleDownKey(QKeyEvent *event)
@@ -183,7 +183,7 @@ void QSimpleConsole::handleDownKey(QKeyEvent *event)
 
 	if (historyIndex > 0) {
 		historyIndex--;
-		setCurrentCommand(history.at(static_cast<std::size_t>(historyIndex)));
+		setCurrentCommand(historyCommands.at(historyIndex));
 		return;
 	}
 
@@ -414,9 +414,31 @@ void QSimpleConsole::clear()
 
 void QSimpleConsole::clearHistory()
 {
-	history.clear();
+	historyCommands.clear();
 	historyDraft.clear();
 	historyIndex = -1;
+}
+
+void QSimpleConsole::setHistory(const QStringList &commands)
+{
+	historyCommands = commands.mid(0, static_cast<qsizetype>(historySizeMax));
+
+	// The replaced list may have been mid-walk, so the index and the draft now
+	// describe entries that are gone.
+	historyIndex = -1;
+	historyDraft.clear();
+}
+
+void QSimpleConsole::setMaximumHistorySize(uint32_t commands)
+{
+	historySizeMax = commands;
+	historyCommands = historyCommands.mid(0, static_cast<qsizetype>(historySizeMax));
+
+	// A walk in progress may now point past the end. Clamping rather than
+	// ending the walk leaves whatever the user has on screen alone; an empty
+	// history lands back on -1 by itself.
+	if (historyIndex >= static_cast<int32_t>(historyCommands.size()))
+		historyIndex = static_cast<int32_t>(historyCommands.size()) - 1;
 }
 
 bool QSimpleConsole::saveToFile(const QString &path)
@@ -557,10 +579,10 @@ void QSimpleConsole::insertFromMimeData(const QMimeData *source)
 
 void QSimpleConsole::addToHistory(const QString &command)
 {
-	if (!history.empty() && history.front() == command)
+	if (!historyCommands.isEmpty() && historyCommands.first() == command)
 		return;
 
-	history.push_front(command);
-	if (history.size() > historySizeMax)
-		history.pop_back();
+	historyCommands.prepend(command);
+	if (historyCommands.size() > static_cast<qsizetype>(historySizeMax))
+		historyCommands.removeLast();
 }

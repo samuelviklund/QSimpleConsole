@@ -2,9 +2,9 @@
 #define QSIMPLECONSOLE_H
 
 #include <QPlainTextEdit>
+#include <QStringList>
 
 #include <cstdint>
-#include <deque>
 
 class QSimpleConsole : public QPlainTextEdit
 {
@@ -13,6 +13,8 @@ class QSimpleConsole : public QPlainTextEdit
 	Q_PROPERTY(QString prompt READ prompt WRITE setPrompt)
 	Q_PROPERTY(bool timestampEnabled READ isTimestampEnabled WRITE setTimestampEnabled)
 	Q_PROPERTY(int32_t scrollbackLines READ scrollbackLines WRITE setScrollbackLines)
+	Q_PROPERTY(QStringList history READ history WRITE setHistory)
+	Q_PROPERTY(uint32_t maximumHistorySize READ maximumHistorySize WRITE setMaximumHistorySize)
 
 public:
 	explicit QSimpleConsole(QWidget *parent = nullptr);
@@ -32,6 +34,20 @@ public:
 	// disables undo/redo, which is how QPlainTextEdit's block limit behaves.
 	void setScrollbackLines(int32_t lines);
 	int32_t scrollbackLines() const;
+
+	// The recorded commands, newest first - index 0 is what the first Up
+	// recalls.
+	QStringList history() const { return historyCommands; }
+
+	// Replaces the recorded commands, newest first, as history() returns them.
+	// Keeps at most maximumHistorySize() of them and drops the rest.
+	void setHistory(const QStringList &commands);
+
+	// Caps the commands kept for Up and Down. Lowering it drops the oldest at
+	// once. A value of 0 disables the history. Unsigned because, unlike
+	// scrollbackLines, there is no "unlimited" sentinel: 0 means none.
+	uint32_t maximumHistorySize() const { return historySizeMax; }
+	void setMaximumHistorySize(uint32_t commands);
 
 	bool canCut() const;
 	bool canPaste() const;
@@ -92,7 +108,7 @@ private:
 	void addToHistory(const QString &command);
 
 	QString promptText = "> ";
-	std::deque<QString> history;
+	QStringList historyCommands;
 	QString historyDraft;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
