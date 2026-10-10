@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QMimeData>
 #include <QRegularExpression>
+#include <QStringList>
 #include <QTextBlock>
 #include <QTextStream>
 #include <QTime>
@@ -381,7 +382,15 @@ void QSimpleConsole::appendOutput(const QString &output)
 	}
 
 	if (timestampEnabled) {
-		cursor.insertText(QTime::currentTime().toString("hh:mm:ss") + ": ");
+		// One reading for the whole call, since these lines arrived together.
+		// Blank lines stay bare: a stamp on an empty line is noise.
+		const QString stamp = QTime::currentTime().toString("hh:mm:ss") + ": ";
+		QStringList lines = text.split('\n');
+		for (QString &line : lines) {
+			if (!line.isEmpty())
+				line.prepend(stamp);
+		}
+		text = lines.join('\n');
 	}
 
 	cursor.insertText(text);

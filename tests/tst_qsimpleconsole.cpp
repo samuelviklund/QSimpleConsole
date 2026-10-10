@@ -54,6 +54,8 @@ private slots:
 	void asyncOutputPreservesPendingInput();
 	void twoOutputsForOneCommandRenderCleanly();
 	void timestampPrefixesOutput();
+	void timestampPrefixesEveryLine();
+	void timestampSkipsBlankLines();
 	void maximumBlockCountDoesNotBreakBoundary();
 	void scrollbackIsUnlimitedByDefault();
 	void scrollbackLinesCapsHistory();
@@ -418,6 +420,40 @@ void tst_QSimpleConsole::timestampPrefixesOutput()
 	QVERIFY(lines.size() >= 2);
 	QVERIFY2(QRegularExpression("^\\d{2}:\\d{2}:\\d{2}: hello$").match(lines.at(0)).hasMatch(),
 	         qPrintable("unexpected output line: " + lines.at(0)));
+}
+
+/* Output handed over in one call can still be several lines. Every one of them
+ * carries the stamp, or the ones below the first look like continuations of a
+ * line that was never timestamped. */
+void tst_QSimpleConsole::timestampPrefixesEveryLine()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setTimestampEnabled(true);
+
+	console.appendOutput("alpha\nbeta\ngamma");
+
+	const QStringList lines = console.toPlainText().split('\n');
+	const QRegularExpression stamped("^\\d{2}:\\d{2}:\\d{2}: (alpha|beta|gamma)$");
+	QCOMPARE(lines.size(), 4); // three output lines plus the prompt
+	for (int32_t i = 0; i < 3; ++i)
+		QVERIFY2(stamped.match(lines.at(i)).hasMatch(),
+		         qPrintable("unstamped line: " + lines.at(i)));
+}
+
+void tst_QSimpleConsole::timestampSkipsBlankLines()
+{
+	QSimpleConsole console;
+	console.show();
+	console.setTimestampEnabled(true);
+
+	console.appendOutput("alpha\n\nbeta");
+
+	const QStringList lines = console.toPlainText().split('\n');
+	QCOMPARE(lines.size(), 4);
+	QVERIFY(lines.at(0).endsWith(": alpha"));
+	QCOMPARE(lines.at(1), QString()); // no bare stamp on its own line
+	QVERIFY(lines.at(2).endsWith(": beta"));
 }
 
 void tst_QSimpleConsole::maximumBlockCountDoesNotBreakBoundary()
