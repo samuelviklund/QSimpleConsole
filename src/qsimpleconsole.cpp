@@ -235,6 +235,10 @@ void QSimpleConsole::handleReturnKey(QKeyEvent *event)
 
 	handlingSubmittedCommand = true;
 	emit commandEntered(command);
+	// appendOutput clears this too, so this line only matters for a handler
+	// that wrote nothing. Without it the flag would still be set when unrelated
+	// output arrives later, and that output would keep the stale command line
+	// instead of rebuilding it.
 	handlingSubmittedCommand = false;
 
 	// A handler that wrote no output has left the command line open. Close it,
@@ -365,9 +369,14 @@ void QSimpleConsole::appendOutput(const QString &output)
 	QString command = currentCommand();
 
 	if (!handlingSubmittedCommand) {
+		// Output that arrived on its own. Take the command line apart and
+		// rebuild it below the new output, so pending input follows the new
+		// prompt instead of being stranded above it.
 		cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
 		cursor.removeSelectedText();
 	} else {
+		// A reply to the command still on screen. Keep that line and open the
+		// next one under it.
 		cursor.insertText("\n");
 	}
 
@@ -383,6 +392,11 @@ void QSimpleConsole::appendOutput(const QString &output)
 		cursor.insertText(command);
 	}
 
+	// Load-bearing, not bookkeeping. A handler that writes twice sends its
+	// second call down the branch above, which removes the prompt this call
+	// just wrote and puts the next output line in its place - that is what
+	// makes consecutive writes stack with no prompt wedged between them.
+	// twoOutputsForOneCommandRenderCleanly pins the result down.
 	handlingSubmittedCommand = false;
 
 	setTextCursor(cursor);

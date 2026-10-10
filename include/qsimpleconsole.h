@@ -96,6 +96,9 @@ private:
 	QString historyDraft;
 	uint32_t historySizeMax = 32;
 	int32_t historyIndex = -1;
+	// True only between emitting commandEntered and the first appendOutput the
+	// handler makes. It is how appendOutput tells a reply to a just-entered
+	// command from output that arrived on its own.
 	bool handlingSubmittedCommand = false;
 	bool timestampEnabled = false;
 };
